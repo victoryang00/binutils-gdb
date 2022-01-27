@@ -2899,11 +2899,11 @@ get_native_target ()
 static struct target_ops *
 find_default_run_target (const char *do_mesg)
 {
-  if (auto_connect_native_target && the_native_target != NULL)
+  // if (auto_connect_native_target && the_native_target != NULL)
     return the_native_target;
 
-  if (do_mesg != NULL)
-    error (_("Don't know how to %s.  Try \"help target\"."), do_mesg);
+  // if (do_mesg != NULL)
+  //   error (_("Don't know how to %s.  Try \"help target\"."), do_mesg);
   return NULL;
 }
 

@@ -48,7 +48,8 @@
 #include "cli/cli-cmds.h"
 
 #if CXX_STD_THREAD
-#include "gdbsupport/thread-pool.h"
+#undef CXX_STD_THREAD
+// #include "gdbsupport/thread-pool.h"
 #endif
 
 static void maintenance_do_deprecate (const char *, int);

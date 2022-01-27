@@ -669,6 +669,9 @@ captured_main_1 (struct captured_main_args *context)
   setlocale (LC_CTYPE, "");
 #endif
 #ifdef ENABLE_NLS
+#undef ENABLE_NLS
+#endif
+#ifdef ENABLE_NLS
   bindtextdomain (PACKAGE, LOCALEDIR);
   textdomain (PACKAGE);
 #endif

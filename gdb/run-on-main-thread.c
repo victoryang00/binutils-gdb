@@ -20,7 +20,8 @@
 #include "run-on-main-thread.h"
 #include "ser-event.h"
 #if CXX_STD_THREAD
-#include <mutex>
+#undef CXX_STD_THREAD
+// #include <mutex>
 #endif
 #include "gdbsupport/event-loop.h"
 

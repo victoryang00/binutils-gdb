@@ -6193,21 +6193,11 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
-  if test x$ax_cxx_compile_cxx11_required = xtrue; then
-    if test x$ac_success = xno; then
-      as_fn_error $? "*** A compiler with support for C++11 language features is required." "$LINENO" 5
-    fi
-  fi
-  if test x$ac_success = xno; then
-    HAVE_CXX11=0
-    { $as_echo "$as_me:${as_lineno-$LINENO}: No compiler with C++11 support was found" >&5
-$as_echo "$as_me: No compiler with C++11 support was found" >&6;}
-  else
+
     HAVE_CXX11=1
 
 $as_echo "#define HAVE_CXX11 1" >>confdefs.h
 
-  fi
 
 
 
@@ -11034,9 +11024,10 @@ fi
 
 # Check whether --with-python was given.
 if test "${with_python+set}" = set; then :
+  with_python=/opt/homebrew/Cellar/python@3.9/3.9.9/Frameworks/Python.framework/Versions/3.9/bin/python3
   withval=$with_python;
 else
-  with_python=auto
+  with_python=/opt/homebrew/Cellar/python@3.9/3.9.9/Frameworks/Python.framework/Versions/3.9/bin/python3
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use python" >&5

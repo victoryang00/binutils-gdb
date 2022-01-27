@@ -490,7 +490,7 @@ registers_changed_ptid (process_stratum_target *target, ptid_t ptid)
     {
       /* Since there can be ptid clashes between targets, it's not valid to
 	 pass a ptid without saying to which target it belongs.  */
-      gdb_assert (ptid == minus_one_ptid);
+      gdb_assert (ptid.pid() == minus_one_ptid.pid());
 
       /* Delete all the regcaches of all targets.  */
       regcaches.clear ();

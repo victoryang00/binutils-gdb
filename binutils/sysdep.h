@@ -96,7 +96,9 @@ extern char **environ;
 # define _LIBGETTEXT_H
 #endif
 #include <locale.h>
-
+#ifdef ENABLE_NLS
+#undef ENABLE_NLS
+#endif
 #ifdef ENABLE_NLS
 # include <libintl.h>
 # define _(String) gettext (String)

@@ -22,7 +22,9 @@
 
 #ifndef _CTF_INTL_H
 #define _CTF_INTL_H
-
+#ifdef ENABLE_NLS
+#undef ENABLE_NLS
+#endif
 #ifdef ENABLE_NLS
 # include <libintl.h>
 /* Note the redefinition of gettext and ngettext here to use PACKAGE.

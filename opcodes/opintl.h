@@ -19,7 +19,9 @@
    along with this file; see the file COPYING.  If not, write to the
    Free Software Foundation, 51 Franklin Street - Fifth Floor, Boston,
    MA 02110-1301, USA.  */
-
+#ifdef ENABLE_NLS
+#undef ENABLE_NLS
+#endif
 #ifdef ENABLE_NLS
 # include <libintl.h>
 /* Note the redefinition of gettext and ngettext here to use PACKAGE.

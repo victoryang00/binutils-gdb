@@ -4702,9 +4702,9 @@ elif test $ac_cv_prog_cc_g = yes; then
   fi
 else
   if test "$GCC" = yes; then
-    CFLAGS="-O2"
+    CFLAGS="-g -O2"
   else
-    CFLAGS=
+    CFLAGS="-g"
   fi
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $CC option to accept ISO C89" >&5
@@ -5226,9 +5226,9 @@ elif test $ac_cv_prog_cxx_g = yes; then
   fi
 else
   if test "$GXX" = yes; then
-    CXXFLAGS="-O2"
+    CXXFLAGS="-g -O2"
   else
-    CXXFLAGS=
+    CXXFLAGS="-g"
   fi
 fi
 ac_ext=c
@@ -7109,7 +7109,7 @@ if test "x$CFLAGS_FOR_TARGET" = x; then
     CFLAGS_FOR_TARGET=$CFLAGS
     case " $CFLAGS " in
       *" -O2 "*) ;;
-      *) CFLAGS_FOR_TARGET="-O2 $CFLAGS_FOR_TARGET" ;;
+      *) CFLAGS_FOR_TARGET="-g -O2 $CFLAGS_FOR_TARGET" ;;
     esac
     case " $CFLAGS " in
       *" -g "* | *" -g3 "*) ;;
@@ -7126,7 +7126,7 @@ if test "x$CXXFLAGS_FOR_TARGET" = x; then
     CXXFLAGS_FOR_TARGET=$CXXFLAGS
     case " $CXXFLAGS " in
       *" -O2 "*) ;;
-      *) CXXFLAGS_FOR_TARGET="-O2 $CXXFLAGS_FOR_TARGET" ;;
+      *) CXXFLAGS_FOR_TARGET="-g -O2 $CXXFLAGS_FOR_TARGET" ;;
     esac
     case " $CXXFLAGS " in
       *" -g "* | *" -g3 "*) ;;

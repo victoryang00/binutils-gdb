@@ -550,8 +550,8 @@ file_command (const char *arg, int from_tty)
 {
   /* FIXME, if we lose on reading the symbol file, we should revert
      the exec file, but that's rough.  */
-  exec_file_command (arg, from_tty);
   symbol_file_command (arg, from_tty);
+  exec_file_command (arg, from_tty);
   if (deprecated_file_changed_hook)
     deprecated_file_changed_hook (arg);
 }

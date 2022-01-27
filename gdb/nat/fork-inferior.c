@@ -355,7 +355,7 @@ fork_inferior (const char *exec_file_arg, const std::string &allargs,
     pid = fork ();
   else
 #endif
-    pid = vfork ();
+    pid = fork ();
 
   if (pid < 0)
     perror_with_name (("vfork"));

@@ -902,7 +902,7 @@ shell_escape (const char *arg, int from_tty)
 #else /* Can fork.  */
   int status, pid;
 
-  if ((pid = vfork ()) == 0)
+  if ((pid = fork ()) == 0)
     {
       const char *p, *user_shell = get_shell ();
 

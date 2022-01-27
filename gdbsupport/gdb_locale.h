@@ -22,7 +22,9 @@
 #ifdef HAVE_LOCALE_H
 # include <locale.h>
 #endif
-
+#ifdef ENABLE_NLS
+#undef ENABLE_NLS
+#endif
 #ifdef ENABLE_NLS
 # include <libintl.h>
 # define _(String) gettext (String)

@@ -121,7 +121,9 @@ extern int fseeko64 (FILE *stream, off64_t offset, int whence);
 #endif
 
 /* Define offsetof for those systems which lack it */
-
+#ifdef ENABLE_NLS
+#undef ENABLE_NLS
+#endif
 #ifndef offsetof
 #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
 #endif

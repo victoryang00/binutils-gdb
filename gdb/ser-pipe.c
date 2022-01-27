@@ -81,7 +81,7 @@ pipe_open (struct serial *scb, const char *name)
      apparent call to vfork() below *might* actually be a call to
      fork() due to the fact that autoconf will ``#define vfork fork''
      on certain platforms.  */
-  pid = vfork ();
+  pid = fork ();
   
   /* Error.  */
   if (pid == -1)
