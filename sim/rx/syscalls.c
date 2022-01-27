@@ -270,7 +270,7 @@ rx_syscall (int id)
 
 	rv = gettimeofday (&tv, 0);
 	if (trace)
-	  printf ("gettimeofday: %ld sec %ld usec to 0x%x\n", tv.tv_sec,
+	  printf ("gettimeofday: %ld sec %d usec to 0x%x\n", tv.tv_sec,
 		  tv.tv_usec, tvaddr);
 	mem_put_si (tvaddr, tv.tv_sec);
 	mem_put_si (tvaddr + 4, tv.tv_usec);

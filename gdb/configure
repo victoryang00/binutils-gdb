@@ -10463,9 +10463,6 @@ fi
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libgmp" >&5
 $as_echo_n "checking for libgmp... " >&6; }
 if ${ac_cv_libgmp+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
     ac_save_LIBS="$LIBS"
     LIBS="$LIBS $LIBGMP"
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -10492,7 +10489,6 @@ rm -f core conftest.err conftest.$ac_objext \
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_libgmp" >&5
 $as_echo "$ac_cv_libgmp" >&6; }
-  if test "$ac_cv_libgmp" = yes; then
     HAVE_LIBGMP=yes
 
 $as_echo "#define HAVE_LIBGMP 1" >>confdefs.h
@@ -10501,12 +10497,6 @@ $as_echo "#define HAVE_LIBGMP 1" >>confdefs.h
 $as_echo_n "checking how to link with libgmp... " >&6; }
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBGMP" >&5
 $as_echo "$LIBGMP" >&6; }
-  else
-    HAVE_LIBGMP=no
-            CPPFLAGS="$ac_save_CPPFLAGS"
-    LIBGMP=
-    LTLIBGMP=
-  fi
 
 
 
@@ -17438,11 +17428,7 @@ CONFIG_OBS="${CONFIG_OBS} ${gdb_host_obs}"
 if test "$gdb_cv_var_elf" = yes; then
 
 # Check whether --with-lzma was given.
-if test "${with_lzma+set}" = set; then :
-  withval=$with_lzma;
-else
   with_lzma=auto
-fi
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use lzma" >&5
 $as_echo_n "checking whether to use lzma... " >&6; }
@@ -17450,13 +17436,6 @@ $as_echo_n "checking whether to use lzma... " >&6; }
 $as_echo "$with_lzma" >&6; }
 
   if test "${with_lzma}" != no; then
-
-
-
-
-
-
-
 
     use_additional=yes
 
@@ -17509,9 +17488,9 @@ fi
 
   lib_type=`eval echo \$with_liblzma_type`
 
-      LIBLZMA=
-  LTLIBLZMA=
-  INCLZMA=
+      LIBLZMA=-llzma
+  LTLIBLZMA=-L/opt/homebrew/lib
+  INCLZMA=-I/opt/homebrew/include/
   rpathdirs=
   ltrpathdirs=
   names_already_handled=
@@ -17908,7 +17887,6 @@ rm -f core conftest.err conftest.$ac_objext \
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_liblzma" >&5
 $as_echo "$ac_cv_liblzma" >&6; }
-  if test "$ac_cv_liblzma" = yes; then
     HAVE_LIBLZMA=yes
 
 $as_echo "#define HAVE_LIBLZMA 1" >>confdefs.h
@@ -17917,23 +17895,8 @@ $as_echo "#define HAVE_LIBLZMA 1" >>confdefs.h
 $as_echo_n "checking how to link with liblzma... " >&6; }
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBLZMA" >&5
 $as_echo "$LIBLZMA" >&6; }
-  else
-    HAVE_LIBLZMA=no
-            CPPFLAGS="$ac_save_CPPFLAGS"
-    LIBLZMA=
-    LTLIBLZMA=
-  fi
 
 
-
-
-
-
-    if test "$HAVE_LIBLZMA" != yes; then
-      if test "$with_lzma" = yes; then
-        as_fn_error $? "missing liblzma for --with-lzma" "$LINENO" 5
-      fi
-    fi
   fi
 fi
 

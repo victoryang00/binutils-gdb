@@ -30,6 +30,7 @@
 #include "gdbthread.h"
 #include "regcache.h"
 #include "event-top.h"
+// #include "darwin-nat.h"
 #include "inf-loop.h"
 #include <sys/stat.h>
 #include "inf-child.h"
@@ -2283,8 +2284,6 @@ darwin_read_dyld_info (task_t task, CORE_ADDR addr, gdb_byte *rdaddr,
 }
 #endif
 
-
-
 enum target_xfer_status
 darwin_nat_target::xfer_partial (enum target_object object, const char *annex,
 				 gdb_byte *readbuf, const gdb_byte *writebuf,
@@ -2475,4 +2474,115 @@ When this mode is on, all low level exceptions are reported before being\n\
 reported by the kernel."),
 			   &set_enable_mach_exceptions, NULL,
 			   &setlist, &showlist);
+}
+
+void darwin_check_osabi(darwin_inferior *inf, thread_t thread)
+{
+  if (gdbarch_osabi(target_gdbarch()) == GDB_OSABI_UNKNOWN)
+  {
+    /* Attaching to a process.  Let's figure out what kind it is.  */
+    arm_unified_thread_state_t gp_regs;
+    unsigned int gp_count = ARM_THREAD_STATE_COUNT;
+    kern_return_t ret;
+
+    ret = thread_get_state(thread, ARM_THREAD_STATE,
+                           (thread_state_t)&gp_regs, &gp_count);
+    if (ret != KERN_SUCCESS)
+    {
+      MACH_CHECK_ERROR(ret);
+      return;
+    }
+
+    gdbarch_info info;
+    gdbarch_info_fill(&info);
+    info.byte_order = gdbarch_byte_order(target_gdbarch());
+    info.osabi = GDB_OSABI_DARWIN;
+    if (gp_regs.ash.flavor == ARM_THREAD_STATE64)
+      info.bfd_arch_info = bfd_lookup_arch(bfd_arch_i386,
+                                           bfd_mach_arm_6K);
+    else
+      info.bfd_arch_info = bfd_lookup_arch(bfd_arch_i386,
+                                           bfd_mach_i386_i386);
+    gdbarch_update_p(info);
+  }
+}
+static int
+arm64_darwin_sstep_at_sigreturn (arm_unified_thread_state_t *regs)
+{
+  enum bfd_endian byte_order = gdbarch_byte_order (target_gdbarch ());
+  static const gdb_byte darwin_syscall[] = { 0xcd, 0x80 }; /* int 0x80 */
+  gdb_byte buf[sizeof (darwin_syscall)];
+
+  /* Check if PC is at a sigreturn system call. This is universal between arches  */
+  if (target_read_memory (regs->ts_32.__pc , buf, sizeof (buf)) == 0
+      && memcmp (buf, darwin_syscall, sizeof (darwin_syscall)) == 0
+      && regs->ts_32.__r[0] == 0xb8 /* SYS_sigreturn */)
+    {
+      ULONGEST uctx_addr;
+      ULONGEST mctx_addr;
+      ULONGEST flags_addr;
+      unsigned int eflags;
+
+      uctx_addr = read_memory_unsigned_integer(regs->ts_32.__sp + 4, 4, byte_order);
+      mctx_addr = read_memory_unsigned_integer(uctx_addr + 28, 4, byte_order);
+
+      flags_addr = mctx_addr + 12 + 9 * 4;
+      read_memory(flags_addr, (gdb_byte *)&eflags, 4);
+      eflags |= 0x100UL;
+      write_memory(flags_addr, (gdb_byte *)&eflags, 4);
+
+      return 1;
+    }
+  return 0;
+}
+void darwin_set_sstep(thread_t thread, int enable)
+{
+  arm_unified_thread_state_t regs;
+  unsigned int count = ARM_THREAD_STATE_COUNT;
+  kern_return_t kret;
+
+  kret = thread_get_state(thread, ARM_THREAD_STATE,
+                          (thread_state_t)&regs, &count);
+  if (kret != KERN_SUCCESS)
+  {
+    printf_unfiltered(_("darwin_set_sstep: error %x, thread=%x\n"),
+                      kret, thread);
+    return;
+  }
+
+  switch (regs.ash.flavor)
+  {
+  case ARM_THREAD_STATE32:
+  {
+    __uint32_t bit = enable ? 0x100UL : 0;
+
+    if (enable && arm64_darwin_sstep_at_sigreturn(&regs))
+      return;
+    if ((regs.ts_32.__cpsr & 0x100UL) == bit)
+      return;
+    regs.ts_32.__cpsr = (regs.ts_32.__cpsr & ~0x100UL) | bit;
+    kret = thread_set_state(thread, ARM_THREAD_STATE,
+                            (thread_state_t)&regs, count);
+    MACH_CHECK_ERROR(kret);
+  }
+  break;
+#ifdef BFD64
+  case ARM_THREAD_STATE64:
+  {
+    __uint64_t bit = enable ? 0x100UL : 0;
+
+    if (enable && arm64_darwin_sstep_at_sigreturn(&regs))
+      return;
+    if ((regs.ts_64.__cpsr & 0x100UL) == bit)
+      return;
+    regs.ts_64.__cpsr = (regs.ts_64.__cpsr & ~0x100UL) | bit;
+    kret = thread_set_state(thread, ARM_THREAD_STATE,
+                            (thread_state_t)&regs, count);
+    MACH_CHECK_ERROR(kret);
+  }
+  break;
+#endif
+  default:
+    error(_("darwin_set_sstep: unknown flavour: %d"), regs.ash.flavor);
+  }
 }

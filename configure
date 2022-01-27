@@ -3636,8 +3636,8 @@ case "${target}" in
   *-*-chorusos)
     ;;
   aarch64-*-darwin*)
-    noconfigdirs="$noconfigdirs ld gas gdb gprof"
-    noconfigdirs="$noconfigdirs sim target-rda"
+    noconfigdirs="$noconfigdirs ld gas gprof"
+    noconfigdirs="$noconfigdirs target-rda"
     ;;
   arm-*-darwin*)
     noconfigdirs="$noconfigdirs ld gas gdb gprof"
@@ -5718,7 +5718,7 @@ _ACEOF
 
 
 # Check for GMP, MPFR and MPC
-gmplibs="-lmpc -lmpfr -lgmp"
+gmplibs="-lmpc -lmpfr -lgmp -L/opt/homebrew/Cellar/gmp/6.2.1_1/lib -I/opt/homebrew/include/ -L/opt/homebrew/lib/"
 gmpinc=
 have_gmp=no
 
