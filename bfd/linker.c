@@ -1,5 +1,5 @@
 /* linker.c -- BFD linker routines
-   Copyright (C) 1993-2021 Free Software Foundation, Inc.
+   Copyright (C) 1993-2022 Free Software Foundation, Inc.
    Written by Steve Chamberlain and Ian Lance Taylor, Cygnus Support
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -981,7 +981,8 @@ _bfd_generic_link_add_archive_symbols
 	  if (last_ar_offset != arsym->file_offset)
 	    {
 	      last_ar_offset = arsym->file_offset;
-	      element = _bfd_get_elt_at_filepos (abfd, last_ar_offset);
+	      element = _bfd_get_elt_at_filepos (abfd, last_ar_offset,
+						 info);
 	      if (element == NULL
 		  || !bfd_check_format (element, bfd_object))
 		goto error_return;

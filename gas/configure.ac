@@ -3,7 +3,7 @@ dnl
 dnl And be careful when changing it!  If you must add tests with square
 dnl brackets, be sure changequote invocations surround it.
 dnl
-dnl   Copyright (C) 2012-2021 Free Software Foundation, Inc.
+dnl   Copyright (C) 2012-2022 Free Software Foundation, Inc.
 dnl
 dnl This file is free software; you can redistribute it and/or modify
 dnl it under the terms of the GNU General Public License as published by
@@ -617,7 +617,7 @@ changequote([,])dnl
         fi
         AC_MSG_RESULT($with_isa_spec)
 
-        # --with-priv-spec=[1.9|1.9.1|1.10|1.11].
+        # --with-priv-spec=[1.9.1|1.10|1.11|1.12].
         AC_MSG_CHECKING(for default configuration of --with-priv-spec)
         if test "x${with_priv_spec}" != x; then
           AC_DEFINE_UNQUOTED(DEFAULT_RISCV_PRIV_SPEC, "$with_priv_spec",

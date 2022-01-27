@@ -1,6 +1,6 @@
 /* Target-dependent code for GNU/Linux x86-64.
 
-   Copyright (C) 2001-2021 Free Software Foundation, Inc.
+   Copyright (C) 2001-2022 Free Software Foundation, Inc.
    Contributed by Jiri Smid, SuSE Labs.
 
    This file is part of GDB.
@@ -237,7 +237,7 @@ amd64_linux_get_syscall_number (struct gdbarch *gdbarch,
      is stored at %rax register.  */
   regcache->cooked_read (AMD64_LINUX_ORIG_RAX_REGNUM, buf);
 
-  ret = extract_signed_integer (buf, 8, byte_order);
+  ret = extract_signed_integer (buf, byte_order);
 
   return ret;
 }
@@ -1496,9 +1496,10 @@ amd64_linux_syscall_record_common (struct regcache *regcache,
 
   if (syscall_gdb == gdb_sys_no_syscall)
     {
-      printf_unfiltered (_("Process record and replay target doesn't "
-			   "support syscall number %s\n"), 
-			 pulongest (syscall_native));
+      fprintf_unfiltered (gdb_stderr,
+			  _("Process record and replay target doesn't "
+			    "support syscall number %s\n"), 
+			  pulongest (syscall_native));
       return -1;
     }
   else

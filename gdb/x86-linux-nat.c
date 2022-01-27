@@ -1,6 +1,6 @@
 /* Native-dependent code for GNU/Linux x86 (i386 and x86-64).
 
-   Copyright (C) 1999-2021 Free Software Foundation, Inc.
+   Copyright (C) 1999-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -80,6 +80,8 @@ x86_linux_nat_target::low_new_fork (struct lwp_info *parent, pid_t child_pid)
 x86_linux_nat_target::~x86_linux_nat_target ()
 {
 }
+
+/* Implement the virtual inf_ptrace_target::post_startup_inferior method.  */
 
 void
 x86_linux_nat_target::post_startup_inferior (ptid_t ptid)

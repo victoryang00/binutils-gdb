@@ -1,6 +1,6 @@
 /* Symbol table lookup for the GNU debugger, GDB.
 
-   Copyright (C) 1986-2021 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -27,7 +27,7 @@
 #include "symfile.h"
 #include "objfiles.h"
 #include "gdbcmd.h"
-#include "gdb_regex.h"
+#include "gdbsupport/gdb_regex.h"
 #include "expression.h"
 #include "language.h"
 #include "demangle.h"
@@ -47,7 +47,7 @@
 #include "hashtab.h"
 #include "typeprint.h"
 
-#include "gdb_obstack.h"
+#include "gdbsupport/gdb_obstack.h"
 #include "block.h"
 #include "dictionary.h"
 
@@ -4380,7 +4380,7 @@ output_source_filename_data::output (const char *disp_name,
     m_uiout->text (", ");
   m_first = false;
 
-  wrap_here ("");
+  m_uiout->wrap_hint (0);
   if (m_uiout->is_mi_like_p ())
     {
       m_uiout->field_string ("file", disp_name, file_name_style.style ());
@@ -4678,11 +4678,16 @@ global_symbol_searcher::expand_symtabs
   enum search_domain kind = m_kind;
   bool found_msymbol = false;
 
+  auto do_file_match = [&] (const char *filename, bool basenames)
+    {
+      return file_matches (filename, filenames, basenames);
+    };
+  gdb::function_view<expand_symtabs_file_matcher_ftype> file_matcher = nullptr;
+  if (!filenames.empty ())
+    file_matcher = do_file_match;
+
   objfile->expand_symtabs_matching
-    ([&] (const char *filename, bool basenames)
-     {
-       return file_matches (filename, filenames, basenames);
-     },
+    (file_matcher,
      &lookup_name_info::match_any (),
      [&] (const char *symname)
      {
@@ -6370,13 +6375,12 @@ producer_is_realview (const char *producer)
     "ARM/Thumb C/C++ Compiler, RVCT",
     "ARM C/C++ Compiler, RVCT"
   };
-  int i;
 
   if (producer == NULL)
     return false;
 
-  for (i = 0; i < ARRAY_SIZE (arm_idents); i++)
-    if (startswith (producer, arm_idents[i]))
+  for (const char *ident : arm_idents)
+    if (startswith (producer, ident))
       return true;
 
   return false;

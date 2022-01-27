@@ -1,6 +1,6 @@
 /* Internal format of XCOFF object file data structures for BFD.
 
-   Copyright (C) 1995-2021 Free Software Foundation, Inc.
+   Copyright (C) 1995-2022 Free Software Foundation, Inc.
    Written by Ian Lance Taylor <ian@cygnus.com>, Cygnus Support.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -348,6 +348,9 @@ struct xcoff_link_hash_entry
 
   /* Some linker flags.  */
   unsigned long flags;
+
+  /* Symbol visibility, using the same define than n_type.  */
+  unsigned short visibility;
 
   /* The storage mapping class.  */
   unsigned char smclas;

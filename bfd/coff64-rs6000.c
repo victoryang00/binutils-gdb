@@ -1,5 +1,5 @@
 /* BFD back-end for IBM RS/6000 "XCOFF64" files.
-   Copyright (C) 2000-2021 Free Software Foundation, Inc.
+   Copyright (C) 2000-2022 Free Software Foundation, Inc.
    Written Clinton Popetz.
    Contributed by Cygnus Support.
 
@@ -1350,7 +1350,7 @@ reloc_howto_type xcoff64_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_bitfield, /* complain_on_overflow */
 	 0,			/* special_function */
-	 "R_TLSM",		/* name */
+	 "R_TLSML",		/* name */
 	 true,			/* partial_inplace */
 	 MINUS_ONE,		/* src_mask */
 	 MINUS_ONE,		/* dst_mask */

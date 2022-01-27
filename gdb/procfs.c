@@ -1,6 +1,6 @@
 /* Machine independent support for Solaris /proc (process file system) for GDB.
 
-   Copyright (C) 1999-2021 Free Software Foundation, Inc.
+   Copyright (C) 1999-2022 Free Software Foundation, Inc.
 
    Written by Michael Snyder at Cygnus Solutions.
    Based on work by Fred Fish, Stu Grossman, Geoff Noer, and others.
@@ -1775,19 +1775,7 @@ procfs_target::attach (const char *args, int from_tty)
       unpusher.reset (this);
     }
 
-  if (from_tty)
-    {
-      const char *exec_file = get_exec_file (0);
-
-      if (exec_file)
-	printf_filtered (_("Attaching to program `%s', %s\n"),
-			 exec_file, target_pid_to_str (ptid_t (pid)).c_str ());
-      else
-	printf_filtered (_("Attaching to %s\n"),
-			 target_pid_to_str (ptid_t (pid)).c_str ());
-
-      fflush (stdout);
-    }
+  target_announce_attach (from_tty, pid);
 
   do_attach (ptid_t (pid));
 
@@ -1798,19 +1786,7 @@ procfs_target::attach (const char *args, int from_tty)
 void
 procfs_target::detach (inferior *inf, int from_tty)
 {
-  int pid = inferior_ptid.pid ();
-
-  if (from_tty)
-    {
-      const char *exec_file;
-
-      exec_file = get_exec_file (0);
-      if (exec_file == NULL)
-	exec_file = "";
-
-      printf_filtered (_("Detaching from program: %s, %s\n"), exec_file,
-		       target_pid_to_str (ptid_t (pid)).c_str ());
-    }
+  target_announce_detach (from_tty);
 
   do_detach ();
 
@@ -2353,7 +2329,7 @@ wait_again:
 	}
 
       if (status)
-	store_waitstatus (status, wstat);
+	*status = host_status_to_waitstatus (wstat);
     }
 
   return retval;

@@ -1,6 +1,6 @@
 # config.bfd
 #
-#   Copyright (C) 2012-2021 Free Software Foundation, Inc.
+#   Copyright (C) 2012-2022 Free Software Foundation, Inc.
 #
 # This file is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -48,6 +48,7 @@ targ_underscore=no
 
 # Catch obsolete configurations.
 case $targ in
+ m32c-*-rtems* | \
  ns32k-*-netbsd* | \
  null)
     if test "x$enable_obsolete" != xyes; then
@@ -792,7 +793,7 @@ case "${targ}" in
     targ_selvecs=lm32_elf32_vec
     ;;
 
-  m32c-*-elf | m32c-*-rtems*)
+  m32c-*-elf)
     targ_defvec=m32c_elf32_vec
     targ_underscore=yes
     ;;
@@ -1463,7 +1464,7 @@ case "${targ}" in
   loongarch32-*)
     targ_defvec=loongarch_elf32_vec
     targ_selvecs="loongarch_elf32_vec"
-    want64=false
+    want64=true
     ;;
 
   loongarch64-*)

@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 dnl
-dnl   Copyright (C) 2012-2021 Free Software Foundation, Inc.
+dnl   Copyright (C) 2012-2022 Free Software Foundation, Inc.
 dnl
 dnl This file is free software; you can redistribute it and/or modify
 dnl it under the terms of the GNU General Public License as published by
@@ -93,6 +93,7 @@ AM_PO_SUBDIRS
 . ${srcdir}/../bfd/configure.host
 
 BFD_CC_FOR_BUILD
+BFD_64_BIT
 
 AC_SUBST(HDEFINES)
 AC_PROG_INSTALL
@@ -380,7 +381,7 @@ if test x${all_targets} = xfalse ; then
 
 else	# all_targets is true
     archdefs=-DARCH_all
-    if grep '#define BFD_ARCH_SIZE 64' ../bfd/bfd-in3.h > /dev/null; then
+    if test "$enable_64_bit_bfd" = "yes" ; then
 	BFD_MACHINES='$(ALL32_MACHINES) $(ALL64_MACHINES)'
     else
 	BFD_MACHINES='$(ALL32_MACHINES)'

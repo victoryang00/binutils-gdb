@@ -1,6 +1,6 @@
 /* Common target dependent code for GDB on ARM systems.
 
-   Copyright (C) 1988-2021 Free Software Foundation, Inc.
+   Copyright (C) 1988-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -8623,7 +8623,7 @@ show_disassembly_style_sfunc (struct ui_file *file, int from_tty,
 	len = strcspn (style, ",");
       }
 
-  fprintf_unfiltered (file, "The disassembly style is \"%.*s\".\n", len, style);
+  fprintf_filtered (file, "The disassembly style is \"%.*s\".\n", len, style);
 }
 
 /* Return the ARM register name corresponding to register I.  */
@@ -9717,38 +9717,38 @@ arm_dump_tdep (struct gdbarch *gdbarch, struct ui_file *file)
   if (tdep == NULL)
     return;
 
-  fprintf_unfiltered (file, _("arm_dump_tdep: fp_model = %i\n"),
-		      (int) tdep->fp_model);
-  fprintf_unfiltered (file, _("arm_dump_tdep: have_fpa_registers = %i\n"),
-		      (int) tdep->have_fpa_registers);
-  fprintf_unfiltered (file, _("arm_dump_tdep: have_wmmx_registers = %i\n"),
-		      (int) tdep->have_wmmx_registers);
-  fprintf_unfiltered (file, _("arm_dump_tdep: vfp_register_count = %i\n"),
-		      (int) tdep->vfp_register_count);
-  fprintf_unfiltered (file, _("arm_dump_tdep: have_s_pseudos = %s\n"),
-		      tdep->have_s_pseudos? "true" : "false");
-  fprintf_unfiltered (file, _("arm_dump_tdep: s_pseudo_base = %i\n"),
-		      (int) tdep->s_pseudo_base);
-  fprintf_unfiltered (file, _("arm_dump_tdep: s_pseudo_count = %i\n"),
-		      (int) tdep->s_pseudo_count);
-  fprintf_unfiltered (file, _("arm_dump_tdep: have_q_pseudos = %s\n"),
-		      tdep->have_q_pseudos? "true" : "false");
-  fprintf_unfiltered (file, _("arm_dump_tdep: q_pseudo_base = %i\n"),
-		      (int) tdep->q_pseudo_base);
-  fprintf_unfiltered (file, _("arm_dump_tdep: q_pseudo_count = %i\n"),
-		      (int) tdep->q_pseudo_count);
-  fprintf_unfiltered (file, _("arm_dump_tdep: have_neon = %i\n"),
-		      (int) tdep->have_neon);
-  fprintf_unfiltered (file, _("arm_dump_tdep: have_mve = %s\n"),
-		      tdep->have_mve? "yes" : "no");
-  fprintf_unfiltered (file, _("arm_dump_tdep: mve_vpr_regnum = %i\n"),
-		      tdep->mve_vpr_regnum);
-  fprintf_unfiltered (file, _("arm_dump_tdep: mve_pseudo_base = %i\n"),
-		      tdep->mve_pseudo_base);
-  fprintf_unfiltered (file, _("arm_dump_tdep: mve_pseudo_count = %i\n"),
-		      tdep->mve_pseudo_count);
-  fprintf_unfiltered (file, _("arm_dump_tdep: Lowest pc = 0x%lx\n"),
-		      (unsigned long) tdep->lowest_pc);
+  fprintf_filtered (file, _("arm_dump_tdep: fp_model = %i\n"),
+		    (int) tdep->fp_model);
+  fprintf_filtered (file, _("arm_dump_tdep: have_fpa_registers = %i\n"),
+		    (int) tdep->have_fpa_registers);
+  fprintf_filtered (file, _("arm_dump_tdep: have_wmmx_registers = %i\n"),
+		    (int) tdep->have_wmmx_registers);
+  fprintf_filtered (file, _("arm_dump_tdep: vfp_register_count = %i\n"),
+		    (int) tdep->vfp_register_count);
+  fprintf_filtered (file, _("arm_dump_tdep: have_s_pseudos = %s\n"),
+		    tdep->have_s_pseudos? "true" : "false");
+  fprintf_filtered (file, _("arm_dump_tdep: s_pseudo_base = %i\n"),
+		    (int) tdep->s_pseudo_base);
+  fprintf_filtered (file, _("arm_dump_tdep: s_pseudo_count = %i\n"),
+		    (int) tdep->s_pseudo_count);
+  fprintf_filtered (file, _("arm_dump_tdep: have_q_pseudos = %s\n"),
+		    tdep->have_q_pseudos? "true" : "false");
+  fprintf_filtered (file, _("arm_dump_tdep: q_pseudo_base = %i\n"),
+		    (int) tdep->q_pseudo_base);
+  fprintf_filtered (file, _("arm_dump_tdep: q_pseudo_count = %i\n"),
+		    (int) tdep->q_pseudo_count);
+  fprintf_filtered (file, _("arm_dump_tdep: have_neon = %i\n"),
+		    (int) tdep->have_neon);
+  fprintf_filtered (file, _("arm_dump_tdep: have_mve = %s\n"),
+		    tdep->have_mve? "yes" : "no");
+  fprintf_filtered (file, _("arm_dump_tdep: mve_vpr_regnum = %i\n"),
+		    tdep->mve_vpr_regnum);
+  fprintf_filtered (file, _("arm_dump_tdep: mve_pseudo_base = %i\n"),
+		    tdep->mve_pseudo_base);
+  fprintf_filtered (file, _("arm_dump_tdep: mve_pseudo_count = %i\n"),
+		    tdep->mve_pseudo_count);
+  fprintf_filtered (file, _("arm_dump_tdep: Lowest pc = 0x%lx\n"),
+		    (unsigned long) tdep->lowest_pc);
 }
 
 #if GDB_SELF_TEST
@@ -9802,6 +9802,8 @@ _initialize_arm_tdep ()
 	size_t offset = strlen ("reg-names-");
 	const char *style = disasm_options->name[i];
 	valid_disassembly_styles[j++] = &style[offset];
+	if (strcmp (&style[offset], "std") == 0)
+	  disassembly_style = &style[offset];
 	length = snprintf (rdptr, rest, "%s - %s\n", &style[offset],
 			   disasm_options->description[i]);
 	rdptr += length;
@@ -11328,9 +11330,10 @@ arm_record_b_bl (insn_decode_record *arm_insn_r)
 static int
 arm_record_unsupported_insn (insn_decode_record *arm_insn_r)
 {
-  printf_unfiltered (_("Process record does not support instruction "
-		       "0x%0x at address %s.\n"),arm_insn_r->arm_insn,
-		     paddress (arm_insn_r->gdbarch, arm_insn_r->this_addr));
+  fprintf_unfiltered (gdb_stderr,
+		      _("Process record does not support instruction "
+			"0x%0x at address %s.\n"),arm_insn_r->arm_insn,
+		      paddress (arm_insn_r->gdbarch, arm_insn_r->this_addr));
 
   return -1;
 }
@@ -11916,7 +11919,7 @@ arm_record_coproc_data_proc (insn_decode_record *arm_insn_r)
 	}
       else
 	{
-	  printf_unfiltered (_("no syscall record support\n"));
+	  fprintf_unfiltered (gdb_stderr, _("no syscall record support\n"));
 	  return -1;
 	}
     }
@@ -12348,11 +12351,12 @@ thumb_record_misc (insn_decode_record *thumb_insn_r)
 	  record_buf[1] = ARM_LR_REGNUM;
 	  thumb_insn_r->reg_rec_count = 2;
 	  /* We need to save SPSR value, which is not yet done.  */
-	  printf_unfiltered (_("Process record does not support instruction "
-			       "0x%0x at address %s.\n"),
-			     thumb_insn_r->arm_insn,
-			     paddress (thumb_insn_r->gdbarch,
-				       thumb_insn_r->this_addr));
+	  fprintf_unfiltered (gdb_stderr,
+			      _("Process record does not support instruction "
+				"0x%0x at address %s.\n"),
+			      thumb_insn_r->arm_insn,
+			      paddress (thumb_insn_r->gdbarch,
+					thumb_insn_r->this_addr));
 	  return -1;
 
 	case 0xf:
@@ -12440,7 +12444,7 @@ thumb_record_ldm_stm_swi (insn_decode_record *thumb_insn_r)
 	  }
 	else
 	  {
-	    printf_unfiltered (_("no syscall record support\n"));
+	    fprintf_unfiltered (gdb_stderr, _("no syscall record support\n"));
 	    return -1;
 	  }
     }
@@ -13351,10 +13355,11 @@ decode_insn (abstract_memory_reader &reader, insn_decode_record *arm_record,
     {
       if (record_debug)
 	{
-	  printf_unfiltered (_("Process record: error reading memory at "
-			       "addr %s len = %d.\n"),
-			     paddress (arm_record->gdbarch,
-				       arm_record->this_addr), insn_size);
+	  fprintf_unfiltered (gdb_stdlog,
+			      _("Process record: error reading memory at "
+				"addr %s len = %d.\n"),
+			      paddress (arm_record->gdbarch,
+					arm_record->this_addr), insn_size);
 	}
       return -1;
     }
@@ -13619,10 +13624,11 @@ arm_process_record (struct gdbarch *gdbarch, struct regcache *regcache,
     {
       if (record_debug)
 	{
-	  printf_unfiltered (_("Process record: error reading memory at "
-			       "addr %s len = %d.\n"),
-			     paddress (arm_record.gdbarch,
-				       arm_record.this_addr), 2);
+	  fprintf_unfiltered (gdb_stdlog,
+			      _("Process record: error reading memory at "
+				"addr %s len = %d.\n"),
+			      paddress (arm_record.gdbarch,
+					arm_record.this_addr), 2);
 	}
       return -1;
     }

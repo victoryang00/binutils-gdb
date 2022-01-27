@@ -1,5 +1,5 @@
 /* Simulator option handling.
-   Copyright (C) 1996-2021 Free Software Foundation, Inc.
+   Copyright (C) 1996-2022 Free Software Foundation, Inc.
    Contributed by Cygnus Support.
 
 This file is part of GDB, the GNU debugger.
@@ -20,21 +20,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 /* This must come before any other includes.  */
 #include "defs.h"
 
-#include "sim-main.h"
-#include <string.h>
-#include <stdlib.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
+
+#include "bfd.h"
+#include "environ.h"
+#include "hashtab.h"
 #include "libiberty.h"
+
+#include "sim-main.h"
 #include "sim-options.h"
 #include "sim-io.h"
 #include "sim-assert.h"
-#include "environ.h"
 #include "version.h"
-#include "hashtab.h"
-
-#include "bfd.h"
 
 /* Add a set of options to the simulator.
    TABLE is an array of OPTIONS terminated by a NULL `opt.name' entry.

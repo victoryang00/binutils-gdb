@@ -1,5 +1,5 @@
 /* Multi-process/thread control defs for GDB, the GNU debugger.
-   Copyright (C) 1987-2021 Free Software Foundation, Inc.
+   Copyright (C) 1987-2022 Free Software Foundation, Inc.
    Contributed by Lynx Real-Time Systems, Inc.  Los Gatos, CA.
    
 
@@ -37,6 +37,16 @@ struct symtab;
 
 struct inferior;
 struct process_stratum_target;
+
+/* When true, print debug messages related to GDB thread creation and
+   deletion.  */
+
+extern bool debug_threads;
+
+/* Print a "threads" debug statement.  */
+
+#define threads_debug_printf(fmt, ...) \
+  debug_prefixed_printf_cond (debug_threads, "threads", fmt, ##__VA_ARGS__)
 
 /* Frontend view of the thread state.  Possible extensions: stepping,
    finishing, until(ling),...
@@ -235,6 +245,7 @@ class thread_info : public refcounted_object,
 {
 public:
   explicit thread_info (inferior *inf, ptid_t ptid);
+  ~thread_info ();
 
   bool deletable () const;
 
@@ -991,5 +1002,9 @@ extern void thread_try_catch_cmd (thread_info *thr,
 				  gdb::optional<int> ada_task,
 				  const char *cmd, int from_tty,
 				  const qcs_flags &flags);
+
+/* Return a string representation of STATE.  */
+
+extern const char *thread_state_string (enum thread_state state);
 
 #endif /* GDBTHREAD_H */

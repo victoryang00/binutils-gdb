@@ -1,5 +1,5 @@
 /* Read coff symbol tables and convert to internal format, for GDB.
-   Copyright (C) 1987-2021 Free Software Foundation, Inc.
+   Copyright (C) 1987-2022 Free Software Foundation, Inc.
    Contributed by David D. Johnson, Brown University (ddj@cs.brown.edu).
 
    This file is part of GDB.
@@ -24,7 +24,7 @@
 #include "breakpoint.h"
 
 #include "bfd.h"
-#include "gdb_obstack.h"
+#include "gdbsupport/gdb_obstack.h"
 #include <ctype.h>
 
 #include "coff/internal.h"	/* Internal format of COFF symbols in BFD */

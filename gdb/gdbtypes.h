@@ -1,7 +1,7 @@
 
 /* Internal type definitions for GDB.
 
-   Copyright (C) 1992-2021 Free Software Foundation, Inc.
+   Copyright (C) 1992-2022 Free Software Foundation, Inc.
 
    Contributed by Cygnus Support, using pieces from other GDB modules.
 
@@ -46,13 +46,14 @@
 
 #include "hashtab.h"
 #include "gdbsupport/array-view.h"
+#include "gdbsupport/gdb-hashtab.h"
 #include "gdbsupport/gdb_optional.h"
 #include "gdbsupport/offset-type.h"
 #include "gdbsupport/enum-flags.h"
 #include "gdbsupport/underlying.h"
 #include "gdbsupport/print-utils.h"
 #include "dwarf2.h"
-#include "gdb_obstack.h"
+#include "gdbsupport/gdb_obstack.h"
 #include "gmp-utils.h"
 
 /* Forward declarations for prototypes.  */
@@ -1910,13 +1911,13 @@ struct call_site
     static int
     eq (const call_site *a, const call_site *b)
     {
-      return core_addr_eq (&a->m_unrelocated_pc, &b->m_unrelocated_pc);
+      return a->m_unrelocated_pc == b->m_unrelocated_pc;
     }
 
     static hashval_t
     hash (const call_site *a)
     {
-      return core_addr_hash (&a->m_unrelocated_pc);
+      return a->m_unrelocated_pc;
     }
 
     static int

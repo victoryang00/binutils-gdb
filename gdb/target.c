@@ -1,6 +1,6 @@
 /* Select target systems and architectures at runtime for GDB.
 
-   Copyright (C) 1990-2021 Free Software Foundation, Inc.
+   Copyright (C) 1990-2022 Free Software Foundation, Inc.
 
    Contributed by Cygnus Support.
 
@@ -298,14 +298,6 @@ void
 target_files_info ()
 {
   return current_inferior ()->top_target ()->files_info ();
-}
-
-/* See target.h.  */
-
-void
-target_post_startup_inferior (ptid_t ptid)
-{
-  return current_inferior ()->top_target ()->post_startup_inferior (ptid);
 }
 
 /* See target.h.  */
@@ -1135,7 +1127,7 @@ noprocess (void)
 static void
 default_terminal_info (struct target_ops *self, const char *args, int from_tty)
 {
-  printf_unfiltered (_("No saved terminal information.\n"));
+  printf_filtered (_("No saved terminal information.\n"));
 }
 
 /* A default implementation for the to_get_ada_task_ptid target method.
@@ -2452,8 +2444,8 @@ info_target_command (const char *args, int from_tty)
   if (current_program_space->symfile_object_file != NULL)
     {
       objfile *objf = current_program_space->symfile_object_file;
-      printf_unfiltered (_("Symbols from \"%s\".\n"),
-			 objfile_name (objf));
+      printf_filtered (_("Symbols from \"%s\".\n"),
+		       objfile_name (objf));
     }
 
   for (target_ops *t = current_inferior ()->top_target ();
@@ -2466,9 +2458,9 @@ info_target_command (const char *args, int from_tty)
       if ((int) (t->stratum ()) <= (int) dummy_stratum)
 	continue;
       if (has_all_mem)
-	printf_unfiltered (_("\tWhile running this, "
-			     "GDB does not access memory from...\n"));
-      printf_unfiltered ("%s:\n", t->longname ());
+	printf_filtered (_("\tWhile running this, "
+			   "GDB does not access memory from...\n"));
+      printf_filtered ("%s:\n", t->longname ());
       t->files_info ();
       has_all_mem = t->has_all_memory ();
     }
@@ -3636,13 +3628,32 @@ target_announce_detach (int from_tty)
   if (!from_tty)
     return;
 
-  exec_file = get_exec_file (0);
-  if (exec_file == NULL)
-    exec_file = "";
-
   pid = inferior_ptid.pid ();
-  printf_unfiltered (_("Detaching from program: %s, %s\n"), exec_file,
-		     target_pid_to_str (ptid_t (pid)).c_str ());
+  exec_file = get_exec_file (0);
+  if (exec_file == nullptr)
+    printf_unfiltered ("Detaching from pid %s\n",
+		       target_pid_to_str (ptid_t (pid)).c_str ());
+  else
+    printf_unfiltered (_("Detaching from program: %s, %s\n"), exec_file,
+		       target_pid_to_str (ptid_t (pid)).c_str ());
+}
+
+/* See target.h  */
+
+void
+target_announce_attach (int from_tty, int pid)
+{
+  if (!from_tty)
+    return;
+
+  const char *exec_file = get_exec_file (0);
+
+  if (exec_file != nullptr)
+    printf_unfiltered ("Attaching to program: %s, %s\n", exec_file,
+		       target_pid_to_str (ptid_t (pid)).c_str ());
+  else
+    printf_unfiltered ("Attaching to %s\n",
+		       target_pid_to_str (ptid_t (pid)).c_str ());
 }
 
 /* The inferior process has died.  Long live the inferior!  */
@@ -4359,27 +4370,24 @@ target_thread_events (int enable)
    just for maintainers to use when debugging gdb.  */
 bool target_async_permitted = true;
 
-/* The set command writes to this variable.  If the inferior is
-   executing, target_async_permitted is *not* updated.  */
-static bool target_async_permitted_1 = true;
-
 static void
-maint_set_target_async_command (const char *args, int from_tty,
-				struct cmd_list_element *c)
+set_maint_target_async (bool permitted)
 {
   if (have_live_inferiors ())
-    {
-      target_async_permitted_1 = target_async_permitted;
-      error (_("Cannot change this setting while the inferior is running."));
-    }
+    error (_("Cannot change this setting while the inferior is running."));
 
-  target_async_permitted = target_async_permitted_1;
+  target_async_permitted = permitted;
+}
+
+static bool
+get_maint_target_async ()
+{
+  return target_async_permitted;
 }
 
 static void
-maint_show_target_async_command (struct ui_file *file, int from_tty,
-				 struct cmd_list_element *c,
-				 const char *value)
+show_maint_target_async (ui_file *file, int from_tty,
+			 cmd_list_element *c, const char *value)
 {
   fprintf_filtered (file,
 		    _("Controlling the inferior in "
@@ -4431,31 +4439,28 @@ exists_non_stop_target ()
    mode.  This is just for maintainers to use when debugging gdb.  */
 enum auto_boolean target_non_stop_enabled = AUTO_BOOLEAN_AUTO;
 
-/* The set command writes to this variable.  If the inferior is
-   executing, target_non_stop_enabled is *not* updated.  */
-static enum auto_boolean target_non_stop_enabled_1 = AUTO_BOOLEAN_AUTO;
-
-/* Implementation of "maint set target-non-stop".  */
+/* Set callback for maint target-non-stop setting.  */
 
 static void
-maint_set_target_non_stop_command (const char *args, int from_tty,
-				   struct cmd_list_element *c)
+set_maint_target_non_stop (auto_boolean enabled)
 {
   if (have_live_inferiors ())
-    {
-      target_non_stop_enabled_1 = target_non_stop_enabled;
-      error (_("Cannot change this setting while the inferior is running."));
-    }
+    error (_("Cannot change this setting while the inferior is running."));
 
-  target_non_stop_enabled = target_non_stop_enabled_1;
+  target_non_stop_enabled = enabled;
 }
 
-/* Implementation of "maint show target-non-stop".  */
+/* Get callback for maint target-non-stop setting.  */
+
+static auto_boolean
+get_maint_target_non_stop ()
+{
+  return target_non_stop_enabled;
+}
 
 static void
-maint_show_target_non_stop_command (struct ui_file *file, int from_tty,
-				    struct cmd_list_element *c,
-				    const char *value)
+show_maint_target_non_stop (ui_file *file, int from_tty,
+			    cmd_list_element *c, const char *value)
 {
   if (target_non_stop_enabled == AUTO_BOOLEAN_AUTO)
     fprintf_filtered (file,
@@ -4561,22 +4566,24 @@ result in significant performance improvement for remote targets."),
 	   &maintenanceprintlist);
 
   add_setshow_boolean_cmd ("target-async", no_class,
-			   &target_async_permitted_1, _("\
+			   _("\
 Set whether gdb controls the inferior in asynchronous mode."), _("\
 Show whether gdb controls the inferior in asynchronous mode."), _("\
 Tells gdb whether to control the inferior in asynchronous mode."),
-			   maint_set_target_async_command,
-			   maint_show_target_async_command,
+			   set_maint_target_async,
+			   get_maint_target_async,
+			   show_maint_target_async,
 			   &maintenance_set_cmdlist,
 			   &maintenance_show_cmdlist);
 
   add_setshow_auto_boolean_cmd ("target-non-stop", no_class,
-				&target_non_stop_enabled_1, _("\
+				_("\
 Set whether gdb always controls the inferior in non-stop mode."), _("\
 Show whether gdb always controls the inferior in non-stop mode."), _("\
 Tells gdb whether to control the inferior in non-stop mode."),
-			   maint_set_target_non_stop_command,
-			   maint_show_target_non_stop_command,
+			   set_maint_target_non_stop,
+			   get_maint_target_non_stop,
+			   show_maint_target_non_stop,
 			   &maintenance_set_cmdlist,
 			   &maintenance_show_cmdlist);
 

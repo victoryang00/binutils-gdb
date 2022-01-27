@@ -1,5 +1,5 @@
 /* Helper routines for C++ support in GDB.
-   Copyright (C) 2002-2021 Free Software Foundation, Inc.
+   Copyright (C) 2002-2022 Free Software Foundation, Inc.
 
    Contributed by MontaVista Software.
 
@@ -147,9 +147,9 @@ inspect_type (struct demangle_parse_info *info,
   name[ret_comp->u.s_name.len] = '\0';
 
   /* Ignore any typedefs that should not be substituted.  */
-  for (int i = 0; i < ARRAY_SIZE (ignore_typedefs); ++i)
+  for (const char *ignorable : ignore_typedefs)
     {
-      if (strcmp (name, ignore_typedefs[i]) == 0)
+      if (strcmp (name, ignorable) == 0)
 	return 0;
     }
 
@@ -2185,7 +2185,7 @@ first_component_command (const char *arg, int from_tty)
   memcpy (prefix, arg, len);
   prefix[len] = '\0';
 
-  printf_unfiltered ("%s\n", prefix);
+  printf_filtered ("%s\n", prefix);
 }
 
 /* Implement "info vtbl".  */

@@ -1,6 +1,6 @@
 /* Top level stuff for GDB, the GNU debugger.
 
-   Copyright (C) 1986-2021 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -385,7 +385,7 @@ new_ui_command (const char *args, int from_tty)
     ui.release ();
   }
 
-  printf_unfiltered ("New UI allocated\n");
+  printf_filtered ("New UI allocated\n");
 }
 
 /* Handler for SIGHUP.  */
@@ -652,7 +652,7 @@ execute_command (const char *p, int from_tty)
 	  std::string prefixname = c->prefixname ();
           std::string prefixname_no_space
 	    = prefixname.substr (0, prefixname.length () - 1);
-	  printf_unfiltered
+	  printf_filtered
 	    ("\"%s\" must be followed by the name of a subcommand.\n",
 	     prefixname_no_space.c_str ());
 	  help_list (*c->subcommands, prefixname.c_str (), all_commands,
@@ -873,7 +873,7 @@ gdb_readline_no_editing (const char *prompt)
       /* Don't use a _filtered function here.  It causes the assumed
 	 character position to be off, since the newline we read from
 	 the user is not accounted for.  */
-      fputs_unfiltered (prompt, gdb_stdout);
+      puts_unfiltered (prompt);
       gdb_flush (gdb_stdout);
     }
 
@@ -1364,7 +1364,7 @@ command_line_input (const char *prompt_arg, const char *annotation_suffix)
       /* Make sure that all output has been output.  Some machines may
 	 let you get away with leaving out some of the gdb_flush, but
 	 not all.  */
-      wrap_here ("");
+      gdb_stdout->wrap_here (0);
       gdb_flush (gdb_stdout);
       gdb_flush (gdb_stderr);
 
@@ -1435,7 +1435,7 @@ print_gdb_version (struct ui_file *stream, bool interactive)
   /* Second line is a copyright notice.  */
 
   fprintf_filtered (stream,
-		    "Copyright (C) 2021 Free Software Foundation, Inc.\n");
+		    "Copyright (C) 2022 Free Software Foundation, Inc.\n");
 
   /* Following the copyright is a brief statement that the program is
      free software, that users are free to copy and change it on

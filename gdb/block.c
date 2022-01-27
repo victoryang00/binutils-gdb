@@ -1,6 +1,6 @@
 /* Block-related functions for the GNU debugger, GDB.
 
-   Copyright (C) 2003-2021 Free Software Foundation, Inc.
+   Copyright (C) 2003-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -21,7 +21,7 @@
 #include "block.h"
 #include "symtab.h"
 #include "symfile.h"
-#include "gdb_obstack.h"
+#include "gdbsupport/gdb_obstack.h"
 #include "cp-support.h"
 #include "addrmap.h"
 #include "gdbtypes.h"

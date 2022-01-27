@@ -1,6 +1,6 @@
 /* Low level packing and unpacking of values for GDB, the GNU Debugger.
 
-   Copyright (C) 1986-2021 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -1344,9 +1344,13 @@ value_contents_copy_raw (struct value *dst, LONGEST dst_offset,
 					     TARGET_CHAR_BIT * length));
 
   /* Copy the data.  */
-  memcpy (value_contents_all_raw (dst).data () + dst_offset * unit_size,
-	  value_contents_all_raw (src).data () + src_offset * unit_size,
-	  length * unit_size);
+  gdb::array_view<gdb_byte> dst_contents
+    = value_contents_all_raw (dst).slice (dst_offset * unit_size,
+					  length * unit_size);
+  gdb::array_view<const gdb_byte> src_contents
+    = value_contents_all_raw (src).slice (src_offset * unit_size,
+					  length * unit_size);
+  copy (src_contents, dst_contents);
 
   /* Copy the meta-data, adjusted.  */
   src_bit_offset = src_offset * unit_size * HOST_CHAR_BIT;
@@ -1721,13 +1725,11 @@ value_copy (struct value *arg)
   val->stack = arg->stack;
   val->is_zero = arg->is_zero;
   val->initialized = arg->initialized;
-  if (!value_lazy (val))
-    {
-      memcpy (value_contents_all_raw (val).data (),
-	      value_contents_all_raw (arg).data (),
-	      TYPE_LENGTH (value_enclosing_type (arg)));
 
-    }
+  if (!value_lazy (val))
+    copy (value_contents_all_raw (arg),
+	  value_contents_all_raw (val));
+
   val->unavailable = arg->unavailable;
   val->optimized_out = arg->optimized_out;
   val->parent = arg->parent;
@@ -1772,9 +1774,7 @@ value_non_lval (struct value *arg)
       struct type *enc_type = value_enclosing_type (arg);
       struct value *val = allocate_value (enc_type);
 
-      memcpy (value_contents_all_raw (val).data (),
-	      value_contents_all (arg).data (),
-	      TYPE_LENGTH (enc_type));
+      copy (value_contents_all (arg), value_contents_all_raw (val));
       val->type = arg->type;
       set_value_embedded_offset (val, value_embedded_offset (arg));
       set_value_pointed_to_offset (val, value_pointed_to_offset (arg));
@@ -1907,6 +1907,14 @@ access_value_history (int num)
   absnum--;
 
   return value_copy (value_history[absnum].get ());
+}
+
+/* See value.h.  */
+
+ULONGEST
+value_history_count ()
+{
+  return value_history.size ();
 }
 
 static void
@@ -2649,11 +2657,11 @@ show_convenience (const char *ignore, int from_tty)
 	 The user can't create them except via Python, and if Python support
 	 is installed this message will never be printed ($_streq will
 	 exist).  */
-      printf_unfiltered (_("No debugger convenience variables now defined.\n"
-			   "Convenience variables have "
-			   "names starting with \"$\";\n"
-			   "use \"set\" as in \"set "
-			   "$foo = 5\" to define them.\n"));
+      printf_filtered (_("No debugger convenience variables now defined.\n"
+			 "Convenience variables have "
+			 "names starting with \"$\";\n"
+			 "use \"set\" as in \"set "
+			 "$foo = 5\" to define them.\n"));
     }
 }
 
@@ -4011,7 +4019,7 @@ value_fetch_lazy_register (struct value *val)
       else
 	{
 	  int i;
-	  const gdb_byte *buf = value_contents (new_val).data ();
+	  gdb::array_view<const gdb_byte> buf = value_contents (new_val);
 
 	  if (VALUE_LVAL (new_val) == lval_register)
 	    fprintf_unfiltered (&debug_file, " register=%d",

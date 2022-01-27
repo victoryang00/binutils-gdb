@@ -1,6 +1,6 @@
 /* Native-dependent code for OpenBSD.
 
-   Copyright (C) 2012-2021 Free Software Foundation, Inc.
+   Copyright (C) 2012-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -144,6 +144,8 @@ obsd_nat_target::post_attach (int pid)
 {
   obsd_enable_proc_events (pid);
 }
+
+/* Implement the virtual inf_ptrace_target::post_startup_inferior method.  */
 
 void
 obsd_nat_target::post_startup_inferior (ptid_t pid)

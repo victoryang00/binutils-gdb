@@ -1,6 +1,6 @@
 /* Target-dependent code for the Matsushita MN10300 for GDB, the GNU debugger.
 
-   Copyright (C) 1996-2021 Free Software Foundation, Inc.
+   Copyright (C) 1996-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -1413,8 +1413,8 @@ static void
 mn10300_dump_tdep (struct gdbarch *gdbarch, struct ui_file *file)
 {
   mn10300_gdbarch_tdep *tdep = (mn10300_gdbarch_tdep *) gdbarch_tdep (gdbarch);
-  fprintf_unfiltered (file, "mn10300_dump_tdep: am33_mode = %d\n",
-		      tdep->am33_mode);
+  fprintf_filtered (file, "mn10300_dump_tdep: am33_mode = %d\n",
+		    tdep->am33_mode);
 }
 
 void _initialize_mn10300_tdep ();

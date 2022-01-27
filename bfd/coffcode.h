@@ -1,5 +1,5 @@
 /* Support for the generic parts of most COFF variants, for BFD.
-   Copyright (C) 1990-2021 Free Software Foundation, Inc.
+   Copyright (C) 1990-2022 Free Software Foundation, Inc.
    Written by Cygnus Support.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -3994,8 +3994,13 @@ coff_write_object_contents (bfd * abfd)
 #endif
   }
 
+#ifdef RS6000COFF_C
+  /* XCOFF 32bit needs this to have new behaviour for n_type field.  */
+  internal_a.vstamp = 2;
+#else
   /* FIXME: Does anybody ever set this to another value?  */
   internal_a.vstamp = 0;
+#endif
 
   /* Now should write relocs, strings, syms.  */
   obj_sym_filepos (abfd) = sym_base;
@@ -4070,7 +4075,7 @@ coff_write_object_contents (bfd * abfd)
       bfd_vma toc;
       asection *loader_sec;
 
-      internal_a.vstamp = 1;
+      internal_a.vstamp = 2;
 
       internal_a.o_snentry = xcoff_data (abfd)->snentry;
       if (internal_a.o_snentry == 0)
@@ -4826,8 +4831,8 @@ coff_slurp_symbol_table (bfd * abfd)
 	      /* The value is actually a symbol index.  Save a pointer
 		 to the symbol instead of the index.  FIXME: This
 		 should use a union.  */
-	      src->u.syment.n_value =
-		(long) (intptr_t) (native_symbols + src->u.syment.n_value);
+	      src->u.syment.n_value
+		= (bfd_hostptr_t) (native_symbols + src->u.syment.n_value);
 	      dst->symbol.value = src->u.syment.n_value;
 	      src->fix_value = 1;
 	      break;

@@ -1,5 +1,5 @@
 /* riscv.h.  RISC-V opcode list for GDB, the GNU debugger.
-   Copyright (C) 2011-2021 Free Software Foundation, Inc.
+   Copyright (C) 2011-2022 Free Software Foundation, Inc.
    Contributed by Andrew Waterman
 
    This file is part of GDB, GAS, and the GNU binutils.
@@ -387,6 +387,7 @@ enum riscv_insn_class
   INSN_CLASS_ZKND_OR_ZKNE,
   INSN_CLASS_V,
   INSN_CLASS_ZVEF,
+  INSN_CLASS_SVINVAL,
 };
 
 /* This structure holds information for a particular instruction.  */

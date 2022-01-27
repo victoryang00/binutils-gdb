@@ -1,6 +1,6 @@
 /* Common target dependent code for GDB on AArch64 systems.
 
-   Copyright (C) 2009-2021 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
    Contributed by ARM Ltd.
 
    This file is part of GDB.
@@ -3652,8 +3652,8 @@ aarch64_dump_tdep (struct gdbarch *gdbarch, struct ui_file *file)
   if (tdep == NULL)
     return;
 
-  fprintf_unfiltered (file, _("aarch64_dump_tdep: Lowest pc = 0x%s"),
-		      paddress (gdbarch, tdep->lowest_pc));
+  fprintf_filtered (file, _("aarch64_dump_tdep: Lowest pc = 0x%s"),
+		    paddress (gdbarch, tdep->lowest_pc));
 }
 
 #if GDB_SELF_TEST
@@ -3708,7 +3708,7 @@ When on, AArch64 specific debugging is enabled."),
 	    if (mem_len) \
 	      { \
 		MEMS =  XNEWVEC (struct aarch64_mem_r, mem_len);  \
-		memcpy(&MEMS->len, &RECORD_BUF[0], \
+		memcpy(MEMS, &RECORD_BUF[0], \
 		       sizeof(struct aarch64_mem_r) * LENGTH); \
 	      } \
 	  } \
@@ -4657,10 +4657,11 @@ aarch64_process_record (struct gdbarch *gdbarch, struct regcache *regcache,
   ret = aarch64_record_decode_insn_handler (&aarch64_record);
   if (ret == AARCH64_RECORD_UNSUPPORTED)
     {
-      printf_unfiltered (_("Process record does not support instruction "
-			   "0x%0x at address %s.\n"),
-			 aarch64_record.aarch64_insn,
-			 paddress (gdbarch, insn_addr));
+      fprintf_unfiltered (gdb_stderr,
+			  _("Process record does not support instruction "
+			    "0x%0x at address %s.\n"),
+			  aarch64_record.aarch64_insn,
+			  paddress (gdbarch, insn_addr));
       ret = -1;
     }
 

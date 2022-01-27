@@ -1,5 +1,5 @@
 # Generate the main loop of the simulator.
-# Copyright (C) 1996-2021 Free Software Foundation, Inc.
+# Copyright (C) 1996-2022 Free Software Foundation, Inc.
 # Contributed by Cygnus Support.
 #
 # This file is part of the GNU simulators.
@@ -312,8 +312,10 @@ cat << EOF
 #define WANT_CPU @cpu@
 #define WANT_CPU_@CPU@
 
-#include "sim-main.h"
+#include "ansidecl.h"
 #include "bfd.h"
+
+#include "sim-main.h"
 #include "cgen-mem.h"
 #include "cgen-ops.h"
 #include "sim-assert.h"

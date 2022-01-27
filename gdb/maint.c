@@ -1,6 +1,6 @@
 /* Support for GDB maintenance commands.
 
-   Copyright (C) 1992-2021 Free Software Foundation, Inc.
+   Copyright (C) 1992-2022 Free Software Foundation, Inc.
 
    Written by Fred Fish at Cygnus Support.
 
@@ -116,7 +116,7 @@ static void
 maintenance_time_display (const char *args, int from_tty)
 {
   if (args == NULL || *args == '\0')
-    printf_unfiltered (_("\"maintenance time\" takes a numeric argument.\n"));
+    printf_filtered (_("\"maintenance time\" takes a numeric argument.\n"));
   else
     set_per_command_time (strtol (args, NULL, 10));
 }
@@ -125,7 +125,7 @@ static void
 maintenance_space_display (const char *args, int from_tty)
 {
   if (args == NULL || *args == '\0')
-    printf_unfiltered ("\"maintenance space\" takes a numeric argument.\n");
+    printf_filtered ("\"maintenance space\" takes a numeric argument.\n");
   else
     set_per_command_space (strtol (args, NULL, 10));
 }
@@ -329,7 +329,7 @@ print_objfile_section_info (bfd *abfd, struct obj_section *asect,
    from ABFD.  It might be that no such wrapper exists (for example debug
    sections don't have such wrappers) in which case nullptr is returned.  */
 
-static obj_section *
+obj_section *
 maint_obj_section_from_bfd_section (bfd *abfd,
 				    asection *asection,
 				    objfile *ofile)
@@ -364,9 +364,9 @@ maint_print_all_sections (const char *header, bfd *abfd, objfile *objfile,
 			  const char *arg)
 {
   puts_filtered (header);
-  wrap_here ("        ");
+  gdb_stdout->wrap_here (8);
   printf_filtered ("`%s', ", bfd_get_filename (abfd));
-  wrap_here ("        ");
+  gdb_stdout->wrap_here (8);
   printf_filtered (_("file type %s.\n"), bfd_get_target (abfd));
 
   int section_count = gdb_bfd_count_sections (abfd);
@@ -632,7 +632,7 @@ maintenance_deprecate (const char *args, int from_tty)
 {
   if (args == NULL || *args == '\0')
     {
-      printf_unfiltered (_("\"maintenance deprecate\" takes an argument,\n\
+      printf_filtered (_("\"maintenance deprecate\" takes an argument,\n\
 the command you want to deprecate, and optionally the replacement command\n\
 enclosed in quotes.\n"));
     }
@@ -646,7 +646,7 @@ maintenance_undeprecate (const char *args, int from_tty)
 {
   if (args == NULL || *args == '\0')
     {
-      printf_unfiltered (_("\"maintenance undeprecate\" takes an argument, \n\
+      printf_filtered (_("\"maintenance undeprecate\" takes an argument, \n\
 the command you want to undeprecate.\n"));
     }
 
@@ -990,11 +990,12 @@ scoped_command_stats::~scoped_command_stats ()
       /* Subtract time spend in prompt_for_continue from walltime.  */
       wall_time -= get_prompt_for_continue_wait_time ();
 
-      printf_unfiltered (!m_msg_type
-			 ? _("Startup time: %.6f (cpu), %.6f (wall)\n")
-			 : _("Command execution time: %.6f (cpu), %.6f (wall)\n"),
-			 duration<double> (cmd_time).count (),
-			 duration<double> (wall_time).count ());
+      fprintf_unfiltered (gdb_stdlog,
+			  !m_msg_type
+			  ? _("Startup time: %.6f (cpu), %.6f (wall)\n")
+			  : _("Command execution time: %.6f (cpu), %.6f (wall)\n"),
+			  duration<double> (cmd_time).count (),
+			  duration<double> (wall_time).count ());
     }
 
   if (m_space_enabled && per_command_space)
@@ -1005,12 +1006,13 @@ scoped_command_stats::~scoped_command_stats ()
       long space_now = lim - lim_at_start;
       long space_diff = space_now - m_start_space;
 
-      printf_unfiltered (!m_msg_type
-			 ? _("Space used: %ld (%s%ld during startup)\n")
-			 : _("Space used: %ld (%s%ld for this command)\n"),
-			 space_now,
-			 (space_diff >= 0 ? "+" : ""),
-			 space_diff);
+      fprintf_unfiltered (gdb_stdlog,
+			  !m_msg_type
+			  ? _("Space used: %ld (%s%ld during startup)\n")
+			  : _("Space used: %ld (%s%ld for this command)\n"),
+			  space_now,
+			  (space_diff >= 0 ? "+" : ""),
+			  space_diff);
 #endif
     }
 
@@ -1019,16 +1021,17 @@ scoped_command_stats::~scoped_command_stats ()
       int nr_symtabs, nr_compunit_symtabs, nr_blocks;
 
       count_symtabs_and_blocks (&nr_symtabs, &nr_compunit_symtabs, &nr_blocks);
-      printf_unfiltered (_("#symtabs: %d (+%d),"
-			   " #compunits: %d (+%d),"
-			   " #blocks: %d (+%d)\n"),
-			 nr_symtabs,
-			 nr_symtabs - m_start_nr_symtabs,
-			 nr_compunit_symtabs,
-			 (nr_compunit_symtabs
-			  - m_start_nr_compunit_symtabs),
-			 nr_blocks,
-			 nr_blocks - m_start_nr_blocks);
+      fprintf_unfiltered (gdb_stdlog,
+			  _("#symtabs: %d (+%d),"
+			    " #compunits: %d (+%d),"
+			    " #blocks: %d (+%d)\n"),
+			  nr_symtabs,
+			  nr_symtabs - m_start_nr_symtabs,
+			  nr_compunit_symtabs,
+			  (nr_compunit_symtabs
+			   - m_start_nr_compunit_symtabs),
+			  nr_blocks,
+			  nr_blocks - m_start_nr_blocks);
     }
 }
 
@@ -1095,7 +1098,7 @@ scoped_command_stats::print_time (const char *msg)
   char out[100];
   strftime (out, sizeof (out), "%F %H:%M:%S", &tm);
 
-  printf_unfiltered ("%s.%03d - %s\n", out, (int) millis, msg);
+  fprintf_unfiltered (gdb_stdlog, "%s.%03d - %s\n", out, (int) millis, msg);
 }
 
 /* Handle unknown "mt set per-command" arguments.

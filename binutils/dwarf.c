@@ -1,5 +1,5 @@
 /* dwarf.c -- display DWARF contents of a BFD binary file
-   Copyright (C) 2005-2021 Free Software Foundation, Inc.
+   Copyright (C) 2005-2022 Free Software Foundation, Inc.
 
    This file is part of GNU Binutils.
 
@@ -5137,7 +5137,7 @@ display_debug_lines_decoded (struct dwarf_section *  section,
 	      else
 		directory = (char *) directory_table[ix - 1];
 
-	      if (do_wide || strlen (directory) < 76)
+	      if (do_wide)
 		printf (_("CU: %s/%s:\n"), directory, file_table[0].name);
 	      else
 		printf ("%s:\n", file_table[0].name);
@@ -11053,6 +11053,9 @@ load_separate_debug_info (const char *            main_filename,
   char *         canon_dir;
   size_t         canon_dirlen;
   size_t         dirlen;
+  char *         canon_filename;
+  char *         canon_debug_filename;
+  bool		 self;
 
   if ((separate_filename = parse_func (xlink, func_data)) == NULL)
     {
@@ -11064,7 +11067,8 @@ load_separate_debug_info (const char *            main_filename,
   /* Attempt to locate the separate file.
      This should duplicate the logic in bfd/opncls.c:find_separate_debug_file().  */
 
-  canon_dir = lrealpath (main_filename);
+  canon_filename = lrealpath (main_filename);
+  canon_dir = xstrdup (canon_filename);
 
   for (canon_dirlen = strlen (canon_dir); canon_dirlen > 0; canon_dirlen--)
     if (IS_DIR_SEPARATOR (canon_dir[canon_dirlen - 1]))
@@ -11096,6 +11100,7 @@ load_separate_debug_info (const char *            main_filename,
     {
       warn (_("Out of memory"));
       free (canon_dir);
+      free (canon_filename);
       return NULL;
     }
 
@@ -11214,10 +11219,21 @@ load_separate_debug_info (const char *            main_filename,
 
   free (canon_dir);
   free (debug_filename);
+  free (canon_filename);
   return NULL;
 
  found:
   free (canon_dir);
+
+  canon_debug_filename = lrealpath (debug_filename);
+  self = strcmp (canon_debug_filename, canon_filename) == 0;
+  free (canon_filename);
+  free (canon_debug_filename);
+  if (self)
+    {
+      free (debug_filename);
+      return NULL;
+    }
 
   void * debug_handle;
 
@@ -11275,6 +11291,113 @@ load_dwo_file (const char * main_filename, const char * name, const char * dir, 
   /* Note - separate_filename will be freed in free_debug_memory().  */
   return separate_handle;
 }
+
+static void *
+try_build_id_prefix (const char * prefix, char * filename, const unsigned char * data, unsigned long id_len)
+{
+  char * f = filename;
+
+  f += sprintf (f, "%s.build-id/%02x/", prefix, (unsigned) *data++);
+  id_len --;
+  while (id_len --)
+    f += sprintf (f, "%02x", (unsigned) *data++);
+  strcpy (f, ".debug");
+
+  return open_debug_file (filename);
+}
+
+/* Try to load a debug file based upon the build-id held in the .note.gnu.build-id section.  */
+
+static void
+load_build_id_debug_file (const char * main_filename ATTRIBUTE_UNUSED, void * main_file)
+{
+  if (! load_debug_section (note_gnu_build_id, main_file))
+    return; /* No .note.gnu.build-id section.  */
+
+  struct dwarf_section * section = & debug_displays [note_gnu_build_id].section;
+  if (section == NULL)
+    {
+      warn (_("Unable to load the .note.gnu.build-id section\n"));
+      return;
+    }
+
+  if (section->start == NULL || section->size < 0x18)
+    {
+      warn (_(".note.gnu.build-id section is corrupt/empty\n"));
+      return;
+    }
+
+  /* In theory we should extract the contents of the section into
+     a note structure and then check the fields.  For now though
+     just use hard coded offsets instead:
+     
+       Field  Bytes    Contents
+	NSize  0...3   4
+	DSize  4...7   8+
+	Type   8..11   3  (NT_GNU_BUILD_ID)
+        Name   12.15   GNU\0
+	Data   16....   */
+
+  /* FIXME: Check the name size, name and type fields.  */
+
+  unsigned long build_id_size;
+  build_id_size = byte_get (section->start + 4, 4);
+  if (build_id_size < 8)
+    {
+      warn (_(".note.gnu.build-id data size is too small\n"));
+      return;
+    }
+  
+  if (build_id_size > (section->size - 16))
+    {
+      warn (_(".note.gnu.build-id data size is too bug\n"));
+      return;
+    }
+
+  char * filename;
+  filename = xmalloc (strlen (".build-id/")
+		      + build_id_size * 2 + 2
+		      + strlen (".debug")
+		      /* The next string should be the same as the longest
+			 name found in the prefixes[] array below.  */
+		      + strlen ("/usrlib64/debug/usr")
+		      + 1);
+  void * handle;
+
+  static const char * prefixes[] =
+    {
+      "",
+      ".debug/",
+      "/usr/lib/debug/",
+      "/usr/lib/debug/usr/",
+      "/usr/lib64/debug/",
+      "/usr/lib64/debug/usr"
+    };
+  long unsigned int i;
+
+  for (i = 0; i < ARRAY_SIZE (prefixes); i++)
+    {
+      handle = try_build_id_prefix (prefixes[i], filename,
+				    section->start + 16, build_id_size);
+      if (handle != NULL)
+	break;
+    }
+  /* FIXME: TYhe BFD library also tries a global debugfile directory prefix.  */
+  if (handle == NULL)
+    {
+      /* Failed to find a debug file associated with the build-id.
+	 This is not an error however, rather it just means that
+	 the debug info has probably not been loaded on the system,
+	 or that another method is being used to link to the debug
+	 info.  */
+      free (filename);
+      return;
+    }
+
+  add_separate_debug_file (filename, handle);
+}
+
+/* Try to load a debug file pointed to by the .debug_sup section.  */
 
 static void
 load_debug_sup_file (const char * main_filename, void * file)
@@ -11393,6 +11516,8 @@ check_for_and_load_links (void * file, const char * filename)
     }
 
   load_debug_sup_file (filename, file);
+
+  load_build_id_debug_file (filename, file);
 }
 
 /* Load the separate debug info file(s) attached to FILE, if any exist.
@@ -11763,7 +11888,8 @@ struct dwarf_section_display debug_displays[] =
   /* Separate debug info files can containt their own .debug_str section,
      and this might be in *addition* to a .debug_str section already present
      in the main file.	Hence we need to have two entries for .debug_str.  */
-  { { ".debug_str",	    ".zdebug_str",	"",	  NO_ABBREVS },	     display_debug_str,	   &do_debug_str,	false },
+  { { ".debug_str",	    ".zdebug_str",	     "",	 NO_ABBREVS },	    display_debug_str,	    &do_debug_str,	false },
+  { { ".note.gnu.build-id", "",                      "",	 NO_ABBREVS },	    display_debug_not_supported, NULL,		false },
 };
 
 /* A static assertion.  */

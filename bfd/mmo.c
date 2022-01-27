@@ -1,5 +1,5 @@
 /* BFD back-end for mmo objects (MMIX-specific object-format).
-   Copyright (C) 2001-2021 Free Software Foundation, Inc.
+   Copyright (C) 2001-2022 Free Software Foundation, Inc.
    Written by Hans-Peter Nilsson (hp@bitrange.com).
    Infrastructure and other bits originally copied from srec.c and
    binary.c.
@@ -1411,6 +1411,16 @@ SUBSECTION
 	    c = c2;
 	}
 
+      if (abfd->tdata.mmo_data->symbol_position
+	  >= abfd->tdata.mmo_data->max_symbol_length)
+	{
+	  _bfd_error_handler
+	    /* xgettext:c-format */
+	    (_("%pB: symbol name exceeds given max length of %d"),
+	     abfd, abfd->tdata.mmo_data->max_symbol_length);
+	  abfd->tdata.mmo_data->have_error = true;
+	  return false;
+	}
       abfd->tdata.mmo_data->lop_stab_symbol[abfd->tdata.mmo_data->symbol_position++] = c;
       abfd->tdata.mmo_data->lop_stab_symbol[abfd->tdata.mmo_data->symbol_position] = 0;
 

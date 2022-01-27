@@ -1,7 +1,7 @@
 /* Internal format of COFF object file data structures, for GNU BFD.
    This file is part of BFD, the Binary File Descriptor library.
 
-   Copyright (C) 1999-2021 Free Software Foundation, Inc.
+   Copyright (C) 1999-2022 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -535,6 +535,13 @@ struct internal_syment
   ((x) == C_STRTAG || (x) == C_UNTAG || (x) == C_ENTAG)
 #define DECREF(x) \
   ((((x) >> N_TSHIFT) & ~ N_BTMASK) | ((x) & N_BTMASK))
+
+/* Visibility flag, in XCOFF n_type.  */
+#define SYM_V_INTERNAL		0x1000
+#define SYM_V_HIDDEN		0x2000
+#define SYM_V_PROTECTED 	0x3000
+#define SYM_V_EXPORTED		0x4000
+#define SYM_V_MASK		0xF000
 
 union internal_auxent
 {

@@ -1,5 +1,5 @@
 /* Target-dependent code for the S12Z, for the GDB.
-   Copyright (C) 2018-2021 Free Software Foundation, Inc.
+   Copyright (C) 2018-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -635,7 +635,7 @@ show_bdccsr_command (const char *args, int from_tty)
   struct string_file output;
   target_rcmd ("bdccsr", &output);
 
-  printf_unfiltered ("The current BDCCSR value is %s\n", output.string().c_str());
+  printf_filtered ("The current BDCCSR value is %s\n", output.string().c_str());
 }
 
 static struct gdbarch *

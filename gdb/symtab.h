@@ -1,6 +1,6 @@
 /* Symbol table definitions for GDB.
 
-   Copyright (C) 1986-2021 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -26,8 +26,8 @@
 #include <set>
 #include "gdbsupport/gdb_vecs.h"
 #include "gdbtypes.h"
-#include "gdb_obstack.h"
-#include "gdb_regex.h"
+#include "gdbsupport/gdb_obstack.h"
+#include "gdbsupport/gdb_regex.h"
 #include "gdbsupport/enum-flags.h"
 #include "gdbsupport/function-view.h"
 #include "gdbsupport/gdb_optional.h"
@@ -1847,7 +1847,7 @@ extern struct compunit_symtab *
 
 extern bool find_pc_line_pc_range (CORE_ADDR, CORE_ADDR *, CORE_ADDR *);
 
-extern void reread_symbols (void);
+extern void reread_symbols (int from_tty);
 
 /* Look up a type named NAME in STRUCT_DOMAIN in the current language.
    The type returned must not be opaque -- i.e., must have at least one field

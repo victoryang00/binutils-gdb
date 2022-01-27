@@ -1,6 +1,6 @@
 /* Support routines for decoding "stabs" debugging information format.
 
-   Copyright (C) 1986-2021 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -26,7 +26,7 @@
 
 #include "defs.h"
 #include "bfd.h"
-#include "gdb_obstack.h"
+#include "gdbsupport/gdb_obstack.h"
 #include "symtab.h"
 #include "gdbtypes.h"
 #include "expression.h"

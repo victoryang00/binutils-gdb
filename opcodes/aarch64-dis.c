@@ -1,5 +1,5 @@
 /* aarch64-dis.c -- AArch64 disassembler.
-   Copyright (C) 2009-2021 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
    Contributed by ARM Ltd.
 
    This file is part of the GNU opcodes library.
@@ -3386,7 +3386,6 @@ print_verifier_notes (aarch64_operand_error *detail,
   /* The output of the verifier cannot be a fatal error, otherwise the assembly
      would not have succeeded.  We can safely ignore these.  */
   assert (detail->non_fatal);
-  assert (detail->error);
 
   (*info->fprintf_func) (info->stream, "  // note: ");
   switch (detail->kind)
@@ -3405,6 +3404,7 @@ print_verifier_notes (aarch64_operand_error *detail,
       break;
 
     default:
+      assert (detail->error);
       (*info->fprintf_func) (info->stream, "%s", detail->error);
       if (detail->index >= 0)
 	(*info->fprintf_func) (info->stream, " at operand %d",

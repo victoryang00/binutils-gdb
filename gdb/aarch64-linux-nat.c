@@ -1,6 +1,6 @@
 /* Native-dependent code for GNU/Linux AArch64.
 
-   Copyright (C) 2011-2021 Free Software Foundation, Inc.
+   Copyright (C) 2011-2022 Free Software Foundation, Inc.
    Contributed by ARM Ltd.
 
    This file is part of GDB.
@@ -694,7 +694,7 @@ ps_get_thread_area (struct ps_prochandle *ph,
 }
 
 
-/* Implement the "post_startup_inferior" target_ops method.  */
+/* Implement the virtual inf_ptrace_target::post_startup_inferior method.  */
 
 void
 aarch64_linux_nat_target::post_startup_inferior (ptid_t ptid)

@@ -1,5 +1,7 @@
 -*- text -*-
 
+Changes in 2.38:
+
 * Add support for AArch64 system registers that were missing in previous
   releases.
 
@@ -28,9 +30,11 @@
   x86 assembler have been reduced from 12 bytes to 10 bytes to match the
   output of .tfloat directive.
 
-* Add support for 'armv8.8-a' and 'armv9-a' for -march in AArch64 GAS.
+* Add support for 'armv8.8-a', 'armv9-a', 'armv9.1-a', 'armv9.2-a' and
+  'armv9.3-a' for -march in AArch64 GAS.
 
-* Add support for 'armv9-a' for -march in Arm GAS.
+* Add support for 'armv8.7-a', 'armv8.8-a', 'armv9-a', 'armv9.1-a',
+  'armv9.2-a' and 'armv9.3-a' for -march in Arm GAS.
 
 * Add support for Intel AVX512_FP16 instructions.
 
@@ -929,7 +933,7 @@ Changes in 1.93.01:
   of new CPUs and formats, lots of bugs fixed.
 
 
-Copyright (C) 2012-2021 Free Software Foundation, Inc.
+Copyright (C) 2012-2022 Free Software Foundation, Inc.
 
 Copying and distribution of this file, with or without modification,
 are permitted in any medium without royalty provided the copyright

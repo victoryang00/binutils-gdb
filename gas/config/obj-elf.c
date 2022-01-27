@@ -1,5 +1,5 @@
 /* ELF object file format
-   Copyright (C) 1992-2021 Free Software Foundation, Inc.
+   Copyright (C) 1992-2022 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -860,6 +860,17 @@ obj_elf_parse_section_letters (char *str, size_t len,
 	{
 	case 'a':
 	  attr |= SHF_ALLOC;
+	  /* Compatibility.  */
+	  if (len > 1 && str[1] == 'm')
+	    {
+	      attr |= SHF_MERGE;
+	      str++, len--;
+	      if (len > 1 && str[1] == 's')
+		{
+		  attr |= SHF_STRINGS;
+		  str++, len--;
+		}
+	    }
 	  break;
 	case 'e':
 	  attr |= SHF_EXCLUDE;
@@ -894,19 +905,6 @@ obj_elf_parse_section_letters (char *str, size_t len,
 	case '?':
 	  *is_clone = true;
 	  break;
-	/* Compatibility.  */
-	case 'm':
-	  if (*(str - 1) == 'a')
-	    {
-	      attr |= SHF_MERGE;
-	      if (len > 1 && str[1] == 's')
-		{
-		  attr |= SHF_STRINGS;
-		  str++, len--;
-		}
-	      break;
-	    }
-	  /* Fall through.  */
 	default:
 	  {
 	    const char *bad_msg = _("unrecognized .section attribute:"

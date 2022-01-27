@@ -1,6 +1,6 @@
 # configure.tgt
 #
-#   Copyright (C) 2013-2021 Free Software Foundation, Inc.
+#   Copyright (C) 2013-2022 Free Software Foundation, Inc.
 #
 # This file is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -202,7 +202,7 @@ arm*-*-conix*)		targ_emul=armelf
 arm*-*-fuchsia*)	targ_emul=armelf_fuchsia
 			targ_extra_emuls="armelfb_fuchsia armelf armelfb"
 			;;
-arm*-*-haiku*)		arg_emul=armelf_haiku
+arm*-*-haiku*)		targ_emul=armelf_haiku
 			targ_extra_emuls=armelf
 			;;
 avr-*-*)		targ_emul=avr2
@@ -436,12 +436,12 @@ lm32-*-*linux*)		targ_emul=elf32lm32fd
 lm32-*-*)		targ_emul=elf32lm32
 			targ_extra_emuls="elf32lm32fd"
 			;;
-m32c-*-elf | m32c-*-rtems*)
+m32c-*-elf)
 			targ_emul=elf32m32c
 			;;
 m32r*le-*-elf*)		targ_emul=m32rlelf
 			;;
-m32r*-*-elf* | m32r*-*-rtems*)
+m32r*-*-elf*)
 			targ_emul=m32relf
 			;;
 m32r*le-*-linux-*)	targ_emul=m32rlelf_linux

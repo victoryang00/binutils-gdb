@@ -1,6 +1,6 @@
 /* Target-dependent code for the MIPS architecture, for GDB, the GNU Debugger.
 
-   Copyright (C) 1988-2021 Free Software Foundation, Inc.
+   Copyright (C) 1988-2022 Free Software Foundation, Inc.
 
    Contributed by Alessandro Forin(af@cs.cmu.edu) at CMU
    and by Per Bothner(bothner@cs.wisc.edu) at U.Wisconsin.
@@ -1190,14 +1190,15 @@ show_mask_address (struct ui_file *file, int from_tty,
   switch (mask_address_var)
     {
     case AUTO_BOOLEAN_TRUE:
-      printf_filtered ("The 32 bit mips address mask is enabled\n");
+      fprintf_filtered (file, "The 32 bit mips address mask is enabled\n");
       break;
     case AUTO_BOOLEAN_FALSE:
-      printf_filtered ("The 32 bit mips address mask is disabled\n");
+      fprintf_filtered (file, "The 32 bit mips address mask is disabled\n");
       break;
     case AUTO_BOOLEAN_AUTO:
-      printf_filtered
-	("The 32 bit address mask is set automatically.  Currently %s\n",
+      fprintf_filtered
+	(file,
+	 "The 32 bit address mask is set automatically.  Currently %s\n",
 	 mips_mask_address_p (tdep) ? "enabled" : "disabled");
       break;
     default:
@@ -6915,7 +6916,7 @@ show_mipsfpu_command (const char *args, int from_tty)
 
   if (gdbarch_bfd_arch_info (target_gdbarch ())->arch != bfd_arch_mips)
     {
-      printf_unfiltered
+      printf_filtered
 	("The MIPS floating-point coprocessor is unknown "
 	 "because the current architecture is not MIPS.\n");
       return;
@@ -6936,11 +6937,11 @@ show_mipsfpu_command (const char *args, int from_tty)
       internal_error (__FILE__, __LINE__, _("bad switch"));
     }
   if (mips_fpu_type_auto)
-    printf_unfiltered ("The MIPS floating-point coprocessor "
+    printf_filtered ("The MIPS floating-point coprocessor "
 		       "is set automatically (currently %s)\n",
 		       fpu);
   else
-    printf_unfiltered
+    printf_filtered
       ("The MIPS floating-point coprocessor is assumed to be %s\n", fpu);
 }
 
@@ -8928,34 +8929,34 @@ mips_dump_tdep (struct gdbarch *gdbarch, struct ui_file *file)
 	}
       /* Determine the size of a pointer.  */
       ef_mips_32bitmode = (tdep->elf_flags & EF_MIPS_32BITMODE);
-      fprintf_unfiltered (file,
-			  "mips_dump_tdep: tdep->elf_flags = 0x%x\n",
-			  tdep->elf_flags);
-      fprintf_unfiltered (file,
-			  "mips_dump_tdep: ef_mips_32bitmode = %d\n",
-			  ef_mips_32bitmode);
-      fprintf_unfiltered (file,
-			  "mips_dump_tdep: ef_mips_arch = %d\n",
-			  ef_mips_arch);
-      fprintf_unfiltered (file,
-			  "mips_dump_tdep: tdep->mips_abi = %d (%s)\n",
-			  tdep->mips_abi, mips_abi_strings[tdep->mips_abi]);
-      fprintf_unfiltered (file,
-			  "mips_dump_tdep: "
-			  "mips_mask_address_p() %d (default %d)\n",
-			  mips_mask_address_p (tdep),
-			  tdep->default_mask_address_p);
+      fprintf_filtered (file,
+			"mips_dump_tdep: tdep->elf_flags = 0x%x\n",
+			tdep->elf_flags);
+      fprintf_filtered (file,
+			"mips_dump_tdep: ef_mips_32bitmode = %d\n",
+			ef_mips_32bitmode);
+      fprintf_filtered (file,
+			"mips_dump_tdep: ef_mips_arch = %d\n",
+			ef_mips_arch);
+      fprintf_filtered (file,
+			"mips_dump_tdep: tdep->mips_abi = %d (%s)\n",
+			tdep->mips_abi, mips_abi_strings[tdep->mips_abi]);
+      fprintf_filtered (file,
+			"mips_dump_tdep: "
+			"mips_mask_address_p() %d (default %d)\n",
+			mips_mask_address_p (tdep),
+			tdep->default_mask_address_p);
     }
-  fprintf_unfiltered (file,
-		      "mips_dump_tdep: MIPS_DEFAULT_FPU_TYPE = %d (%s)\n",
-		      MIPS_DEFAULT_FPU_TYPE,
-		      mips_fpu_type_str (MIPS_DEFAULT_FPU_TYPE));
-  fprintf_unfiltered (file, "mips_dump_tdep: MIPS_EABI = %d\n",
-		      mips_eabi (gdbarch));
-  fprintf_unfiltered (file,
-		      "mips_dump_tdep: MIPS_FPU_TYPE = %d (%s)\n",
-		      mips_get_fpu_type (gdbarch),
-		      mips_fpu_type_str (mips_get_fpu_type (gdbarch)));
+  fprintf_filtered (file,
+		    "mips_dump_tdep: MIPS_DEFAULT_FPU_TYPE = %d (%s)\n",
+		    MIPS_DEFAULT_FPU_TYPE,
+		    mips_fpu_type_str (MIPS_DEFAULT_FPU_TYPE));
+  fprintf_filtered (file, "mips_dump_tdep: MIPS_EABI = %d\n",
+		    mips_eabi (gdbarch));
+  fprintf_filtered (file,
+		    "mips_dump_tdep: MIPS_FPU_TYPE = %d (%s)\n",
+		    mips_get_fpu_type (gdbarch),
+		    mips_fpu_type_str (mips_get_fpu_type (gdbarch)));
 }
 
 void _initialize_mips_tdep ();

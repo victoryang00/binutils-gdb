@@ -1,3 +1,24 @@
+2022-01-25  Klaus Ziegler  <klausz@haus-gisela.de>
+
+	PR 28816
+	* elf/common.h (AT_SUN_HWCAP): Make definition conditional.
+
+2022-01-22  Nick Clifton  <nickc@redhat.com>
+
+	* 2.38 release branch created.
+
+2022-01-13  Nick Clifton  <nickc@redhat.com>
+
+	Import from gcc mainline:
+
+	2021-01-03  Mike Frysinger  <vapier@gentoo.org>
+
+	* libiberty.h (strverscmp): Delete duplicate prototype.
+
+2021-12-07  John Baldwin  <jhb@FreeBSD.org>
+
+	* elf/common.h (AT_FREEBSD_FXRNG, AT_FREEBSD_KPRELOAD): Define.
+
 2021-12-01  Nick Clifton  <nickc@redhat.com>
 
 	PR 28630
@@ -393,7 +414,7 @@
 
 For older changes see ChangeLog-2020
 
-Copyright (C) 2021 Free Software Foundation, Inc.
+Copyright (C) 2021-2022 Free Software Foundation, Inc.
 
 Copying and distribution of this file, with or without modification,
 are permitted in any medium without royalty provided the copyright

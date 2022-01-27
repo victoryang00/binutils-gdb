@@ -1,6 +1,6 @@
 /* Generic remote debugging interface for simulators.
 
-   Copyright (C) 1993-2021 Free Software Foundation, Inc.
+   Copyright (C) 1993-2022 Free Software Foundation, Inc.
 
    Contributed by Cygnus Support.
    Steve Chamberlain (sac@cygnus.com).
@@ -44,6 +44,7 @@
 #include "gdbsupport/byte-vector.h"
 #include "memory-map.h"
 #include "remote.h"
+#include "gdbsupport/buildargv.h"
 
 /* Prototypes */
 
@@ -1114,8 +1115,8 @@ gdbsim_target::files_info ()
 
   if (current_program_space->exec_bfd ())
     {
-      fprintf_unfiltered (gdb_stdlog, "\tAttached to %s running program %s\n",
-			  target_shortname (), file);
+      printf_filtered ("\tAttached to %s running program %s\n",
+		       target_shortname (), file);
       sim_info (sim_data->gdbsim_desc, 0);
     }
 }

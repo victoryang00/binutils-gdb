@@ -1,6 +1,6 @@
 /* Python memory buffer interface for reading inferior memory.
 
-   Copyright (C) 2009-2021 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -83,7 +83,8 @@ mbpy_str (PyObject *self)
 
   return PyString_FromFormat (_("Memory buffer for address %s, \
 which is %s bytes long."),
-			      paddress (python_gdbarch, membuf_obj->addr),
+			      paddress (gdbpy_enter::get_gdbarch (),
+					membuf_obj->addr),
 			      pulongest (membuf_obj->length));
 }
 

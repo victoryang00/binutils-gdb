@@ -1,6 +1,6 @@
 /* addrmap.c --- implementation of address map data structure.
 
-   Copyright (C) 2007-2021 Free Software Foundation, Inc.
+   Copyright (C) 2007-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -19,7 +19,7 @@
 
 #include "defs.h"
 #include "splay-tree.h"
-#include "gdb_obstack.h"
+#include "gdbsupport/gdb_obstack.h"
 #include "addrmap.h"
 #include "gdbsupport/selftest.h"
 

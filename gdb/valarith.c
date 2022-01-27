@@ -1,6 +1,6 @@
 /* Perform arithmetic and other operations on values, for GDB.
 
-   Copyright (C) 1986-2021 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -28,6 +28,11 @@
 #include "infcall.h"
 #include "gdbsupport/byte-vector.h"
 #include "gdbarch.h"
+
+/* Forward declarations.  */
+static struct value *value_subscripted_rvalue (struct value *array,
+					       LONGEST index,
+					       LONGEST lowerbound);
 
 /* Define whether or not the C operator '/' truncates towards zero for
    differently signed operands (truncation direction is undefined in C).  */
@@ -157,17 +162,17 @@ value_subscript (struct value *array, LONGEST index)
       if (VALUE_LVAL (array) != lval_memory)
 	return value_subscripted_rvalue (array, index, *lowerbound);
 
+      gdb::optional<LONGEST> upperbound
+	= get_discrete_high_bound (range_type);
+
+      if (!upperbound.has_value ())
+	upperbound = -1;
+
+      if (index >= *lowerbound && index <= *upperbound)
+	return value_subscripted_rvalue (array, index, *lowerbound);
+
       if (!c_style)
 	{
-	  gdb::optional<LONGEST> upperbound
-	    = get_discrete_high_bound (range_type);
-
-	  if (!upperbound.has_value ())
-	    upperbound = 0;
-
-	  if (index >= *lowerbound && index <= *upperbound)
-	    return value_subscripted_rvalue (array, index, *lowerbound);
-
 	  /* Emit warning unless we have an array of unknown size.
 	     An array of unknown size has lowerbound 0 and upperbound -1.  */
 	  if (*upperbound > -1)
@@ -190,11 +195,12 @@ value_subscript (struct value *array, LONGEST index)
    (eg, a vector register).  This routine used to promote floats
    to doubles, but no longer does.  */
 
-struct value *
-value_subscripted_rvalue (struct value *array, LONGEST index, LONGEST lowerbound)
+static struct value *
+value_subscripted_rvalue (struct value *array, LONGEST index,
+			  LONGEST lowerbound)
 {
   struct type *array_type = check_typedef (value_type (array));
-  struct type *elt_type = check_typedef (TYPE_TARGET_TYPE (array_type));
+  struct type *elt_type = TYPE_TARGET_TYPE (array_type);
   LONGEST elt_size = type_length_units (elt_type);
 
   /* Fetch the bit stride and convert it to a byte stride, assuming 8 bits
@@ -927,12 +933,10 @@ fixed_point_binop (struct value *arg1, struct value *arg2, enum exp_opcode op)
 	  type2 = type1;
 	}
 
-      v1.read_fixed_point (gdb::make_array_view (value_contents (arg1).data (),
-						 TYPE_LENGTH (type1)),
+      v1.read_fixed_point (value_contents (arg1),
 			   type_byte_order (type1), type1->is_unsigned (),
 			   type1->fixed_point_scaling_factor ());
-      v2.read_fixed_point (gdb::make_array_view (value_contents (arg2).data (),
-						 TYPE_LENGTH (type2)),
+      v2.read_fixed_point (value_contents (arg2),
 			   type_byte_order (type2), type2->is_unsigned (),
 			   type2->fixed_point_scaling_factor ());
     }
@@ -942,8 +946,7 @@ fixed_point_binop (struct value *arg1, struct value *arg2, enum exp_opcode op)
       value *fp_val = allocate_value (type1);
 
       fp.write_fixed_point
-	(gdb::make_array_view (value_contents_raw (fp_val).data (),
-			       TYPE_LENGTH (type1)),
+	(value_contents_raw (fp_val),
 	 type_byte_order (type1),
 	 type1->is_unsigned (),
 	 type1->fixed_point_scaling_factor ());
@@ -1531,7 +1534,7 @@ value_vector_widen (struct value *scalar_value, struct type *vector_type)
 {
   /* Widen the scalar to a vector.  */
   struct type *eltype, *scalar_type;
-  struct value *val, *elval;
+  struct value *elval;
   LONGEST low_bound, high_bound;
   int i;
 
@@ -1554,11 +1557,14 @@ value_vector_widen (struct value *scalar_value, struct type *vector_type)
       && !value_equal (elval, scalar_value))
     error (_("conversion of scalar to vector involves truncation"));
 
-  val = allocate_value (vector_type);
+  value *val = allocate_value (vector_type);
+  gdb::array_view<gdb_byte> val_contents = value_contents_writeable (val);
+  int elt_len = TYPE_LENGTH (eltype);
+
   for (i = 0; i < high_bound - low_bound + 1; i++)
     /* Duplicate the contents of elval into the destination vector.  */
-    memcpy (value_contents_writeable (val).data () + (i * TYPE_LENGTH (eltype)),
-	    value_contents_all (elval).data (), TYPE_LENGTH (eltype));
+    copy (value_contents_all (elval),
+	  val_contents.slice (i * elt_len, elt_len));
 
   return val;
 }
@@ -1569,7 +1575,6 @@ value_vector_widen (struct value *scalar_value, struct type *vector_type)
 static struct value *
 vector_binop (struct value *val1, struct value *val2, enum exp_opcode op)
 {
-  struct value *val, *tmp, *mark;
   struct type *type1, *type2, *eltype1, *eltype2;
   int t1_is_vec, t2_is_vec, elsize, i;
   LONGEST low_bound1, high_bound1, low_bound2, high_bound2;
@@ -1599,15 +1604,15 @@ vector_binop (struct value *val1, struct value *val2, enum exp_opcode op)
       || low_bound1 != low_bound2 || high_bound1 != high_bound2)
     error (_("Cannot perform operation on vectors with different types"));
 
-  val = allocate_value (type1);
-  mark = value_mark ();
+  value *val = allocate_value (type1);
+  gdb::array_view<gdb_byte> val_contents = value_contents_writeable (val);
+  value *mark = value_mark ();
   for (i = 0; i < high_bound1 - low_bound1 + 1; i++)
     {
-      tmp = value_binop (value_subscript (val1, i),
-			 value_subscript (val2, i), op);
-      memcpy (value_contents_writeable (val).data () + i * elsize,
-	      value_contents_all (tmp).data (),
-	      elsize);
+      value *tmp = value_binop (value_subscript (val1, i),
+				value_subscript (val2, i), op);
+      copy (value_contents_all (tmp),
+	    val_contents.slice (i * elsize, elsize));
      }
   value_free_to_mark (mark);
 
@@ -1888,7 +1893,7 @@ value_neg (struct value *arg1)
     return value_binop (value_zero (type, not_lval), arg1, BINOP_SUB);
   else if (type->code () == TYPE_CODE_ARRAY && type->is_vector ())
     {
-      struct value *tmp, *val = allocate_value (type);
+      struct value *val = allocate_value (type);
       struct type *eltype = check_typedef (TYPE_TARGET_TYPE (type));
       int i;
       LONGEST low_bound, high_bound;
@@ -1896,12 +1901,14 @@ value_neg (struct value *arg1)
       if (!get_array_bounds (type, &low_bound, &high_bound))
 	error (_("Could not determine the vector bounds"));
 
+      gdb::array_view<gdb_byte> val_contents = value_contents_writeable (val);
+      int elt_len = TYPE_LENGTH (eltype);
+
       for (i = 0; i < high_bound - low_bound + 1; i++)
 	{
-	  tmp = value_neg (value_subscript (arg1, i));
-	  memcpy ((value_contents_writeable (val).data ()
-		   + i * TYPE_LENGTH (eltype)),
-		  value_contents_all (tmp).data (), TYPE_LENGTH (eltype));
+	  value *tmp = value_neg (value_subscript (arg1, i));
+	  copy (value_contents_all (tmp),
+		val_contents.slice (i * elt_len, elt_len));
 	}
       return val;
     }
@@ -1931,7 +1938,6 @@ value_complement (struct value *arg1)
     val = value_from_longest (type, ~value_as_long (arg1));
   else if (type->code () == TYPE_CODE_ARRAY && type->is_vector ())
     {
-      struct value *tmp;
       struct type *eltype = check_typedef (TYPE_TARGET_TYPE (type));
       int i;
       LONGEST low_bound, high_bound;
@@ -1940,12 +1946,14 @@ value_complement (struct value *arg1)
 	error (_("Could not determine the vector bounds"));
 
       val = allocate_value (type);
+      gdb::array_view<gdb_byte> val_contents = value_contents_writeable (val);
+      int elt_len = TYPE_LENGTH (eltype);
+
       for (i = 0; i < high_bound - low_bound + 1; i++)
 	{
-	  tmp = value_complement (value_subscript (arg1, i));
-	  memcpy ((value_contents_writeable (val).data ()
-		   + i * TYPE_LENGTH (eltype)),
-		  value_contents_all (tmp).data (), TYPE_LENGTH (eltype));
+	  value *tmp = value_complement (value_subscript (arg1, i));
+	  copy (value_contents_all (tmp),
+		val_contents.slice (i * elt_len, elt_len));
 	}
     }
   else if (type->code () == TYPE_CODE_COMPLEX)

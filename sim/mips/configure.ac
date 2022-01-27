@@ -24,7 +24,6 @@ AC_SUBST(SIM_SUBTARGET)
 #
 # Select the bitsize of the target
 #
-mips_addr_bitsize=
 case "${target}" in
   mips*-sde-elf*)       mips_bitsize=64 ; mips_msb=63 ;;
   mips*-mti-elf*)       mips_bitsize=64 ; mips_msb=63 ;;
@@ -35,7 +34,7 @@ case "${target}" in
   mips*-*-*)            mips_bitsize=32 ; mips_msb=31 ;;
   *)                    mips_bitsize=64 ; mips_msb=63 ;;
 esac
-SIM_AC_OPTION_BITSIZE($mips_bitsize,$mips_msb,$mips_addr_bitsize)
+SIM_AC_OPTION_BITSIZE($mips_bitsize,$mips_msb)
 
 
 
@@ -195,7 +194,7 @@ if test ${sim_gen} = MULTI; then
 
   cat << __EOF__ > multi-run.c
 /* Main entry point for MULTI simulators.
-   Copyright (C) 2003-2021 Free Software Foundation, Inc.
+   Copyright (C) 2003-2022 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

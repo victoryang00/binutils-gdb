@@ -1,6 +1,6 @@
 /* Target-dependent code for GNU/Linux running on PA-RISC, for GDB.
 
-   Copyright (C) 2004-2021 Free Software Foundation, Inc.
+   Copyright (C) 2004-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -384,7 +384,7 @@ hppa_linux_find_global_pointer (struct gdbarch *gdbarch,
 	      status = target_read_memory (addr, buf, sizeof (buf));
 	      if (status != 0)
 		break;
-	      tag = extract_signed_integer (buf, sizeof (buf), byte_order);
+	      tag = extract_signed_integer (buf, byte_order);
 
 	      if (tag == DT_PLTGOT)
 		{

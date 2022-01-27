@@ -1,6 +1,6 @@
 /* Native-dependent code for FreeBSD.
 
-   Copyright (C) 2002-2021 Free Software Foundation, Inc.
+   Copyright (C) 2002-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -26,6 +26,7 @@
 #include "gdbarch.h"
 #include "gdbcmd.h"
 #include "gdbthread.h"
+#include "gdbsupport/buildargv.h"
 #include "gdbsupport/gdb_wait.h"
 #include "inf-ptrace.h"
 #include <sys/types.h>
@@ -104,13 +105,12 @@ fbsd_nat_target::find_memory_regions (find_memory_region_ftype func,
       size = kve->kve_end - kve->kve_start;
       if (info_verbose)
 	{
-	  fprintf_filtered (gdb_stdout, 
-			    "Save segment, %ld bytes at %s (%c%c%c)\n",
-			    (long) size,
-			    paddress (target_gdbarch (), kve->kve_start),
-			    kve->kve_protection & KVME_PROT_READ ? 'r' : '-',
-			    kve->kve_protection & KVME_PROT_WRITE ? 'w' : '-',
-			    kve->kve_protection & KVME_PROT_EXEC ? 'x' : '-');
+	  printf_filtered ("Save segment, %ld bytes at %s (%c%c%c)\n",
+			   (long) size,
+			   paddress (target_gdbarch (), kve->kve_start),
+			   kve->kve_protection & KVME_PROT_READ ? 'r' : '-',
+			   kve->kve_protection & KVME_PROT_WRITE ? 'w' : '-',
+			   kve->kve_protection & KVME_PROT_EXEC ? 'x' : '-');
 	}
 
       /* Invoke the callback function to create the corefile segment.
@@ -1548,7 +1548,7 @@ fbsd_nat_target::remove_vfork_catchpoint (int pid)
 }
 #endif
 
-/* Implement the "post_startup_inferior" target_ops method.  */
+/* Implement the virtual inf_ptrace_target::post_startup_inferior method.  */
 
 void
 fbsd_nat_target::post_startup_inferior (ptid_t pid)

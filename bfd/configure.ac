@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 dnl
-dnl   Copyright (C) 2012-2021 Free Software Foundation, Inc.
+dnl   Copyright (C) 2012-2022 Free Software Foundation, Inc.
 dnl
 dnl This file is free software; you can redistribute it and/or modify
 dnl it under the terms of the GNU General Public License as published by
@@ -82,13 +82,12 @@ if test x$ac_checking != x ; then
   AC_DEFINE(ENABLE_CHECKING, 1, [Define if you want run-time sanity checks.])
 fi
 
-AC_ARG_ENABLE(64-bit-bfd,
-[  --enable-64-bit-bfd     64-bit support (on hosts with narrower word sizes)],
-[case "${enableval}" in
-  yes)  want64=true  ;;
-  no)   want64=false ;;
-  *)    AC_MSG_ERROR(bad value ${enableval} for 64-bit-bfd option) ;;
-esac],[want64=false])dnl
+BFD_64_BIT
+if test $enable_64_bit_bfd = yes ; then
+  want64=true
+else
+  want64=false
+fi
 
 AC_ARG_ENABLE(targets,
 [  --enable-targets        alternative target configurations],
@@ -1104,8 +1103,7 @@ case ${want_mmap}+${ac_cv_func_mmap_fixed_mapped} in
   true+yes )  AC_DEFINE(USE_MMAP, 1, [Use mmap if it's available?]) ;;
 esac
 
-rm -f doc/config.status
-AC_CONFIG_FILES([Makefile doc/Makefile bfd-in3.h:bfd-in2.h po/Makefile.in:po/Make-in])
+AC_CONFIG_FILES([Makefile bfd-in3.h:bfd-in2.h po/Makefile.in:po/Make-in])
 
 dnl We need this duplication, even though we use AM_PO_SUBDIRS, because of
 dnl our two separate POTFILES.  Yuck.

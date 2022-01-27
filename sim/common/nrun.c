@@ -1,5 +1,5 @@
 /* New version of run front end support for simulators.
-   Copyright (C) 1997-2021 Free Software Foundation, Inc.
+   Copyright (C) 1997-2022 Free Software Foundation, Inc.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -21,22 +21,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 #include <stdlib.h>
 /* For strsignal.  */
 #include <string.h>
+#ifdef HAVE_UNISTD_H
+/* For chdir.  */
+#include <unistd.h>
+#endif
+
+#include "bfd.h"
+#include "environ.h"
 
 #include "sim-main.h"
 #include "sim-signal.h"
 #include "sim/callback.h"
 
-#include "bfd.h"
-#include "environ.h"
-
 #ifndef HAVE_STRSIGNAL
 /* While libiberty provides a fallback, it doesn't provide a prototype.  */
 extern const char *strsignal (int);
-#endif
-
-#ifdef HAVE_UNISTD_H
-/* For chdir.  */
-#include <unistd.h>
 #endif
 
 static void usage (void);

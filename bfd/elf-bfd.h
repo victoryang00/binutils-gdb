@@ -1,5 +1,5 @@
 /* BFD back-end data structures for ELF files.
-   Copyright (C) 1992-2021 Free Software Foundation, Inc.
+   Copyright (C) 1992-2022 Free Software Foundation, Inc.
    Written by Cygnus Support.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -291,9 +291,12 @@ weakdef (struct elf_link_hash_entry *h)
   _bfd_elf_symbol_refs_local_p (H, INFO, 1)
 
 /* Whether an undefined weak symbol should resolve to its link-time
-   value, even in PIC or PIE objects.  */
+   value, even in PIC or PIE objects.  The linker_def test is to
+   handle symbols like __ehdr_start that may be undefweak in early
+   stages of linking but are guaranteed to be defined later.  */
 #define UNDEFWEAK_NO_DYNAMIC_RELOC(INFO, H)		\
   ((H)->root.type == bfd_link_hash_undefweak		\
+   && !(H)->root.linker_def				\
    && (ELF_ST_VISIBILITY ((H)->other) != STV_DEFAULT	\
        || (INFO)->dynamic_undefined_weak == 0))
 
@@ -707,6 +710,7 @@ struct elf_link_hash_table
   asection *irelplt;
   asection *irelifunc;
   asection *dynsym;
+  asection *srelrdyn;
 };
 
 /* Returns TRUE if the hash table is a struct elf_link_hash_table.  */
@@ -945,6 +949,10 @@ struct elf_backend_data
   /* The value of commonpagesize to use when -z relro for this backend.  */
   bfd_vma relropagesize;
 
+  /* The p_align value for this backend.  If it is set, p_align of
+      PT_LOAD alignment will be to p_align by default.  */
+  bfd_vma p_align;
+
   /* The BFD flags applied to sections created for dynamic linking.  */
   flagword dynamic_sec_flags;
 
@@ -1088,19 +1096,27 @@ struct elf_backend_data
      that CHECK_RELOCS will properly process them.  PR 4424.  */
   bool (*relocs_compatible) (const bfd_target *, const bfd_target *);
 
-  /* The CHECK_RELOCS function is called by the add_symbols phase of
-     the ELF backend linker.  It is called once for each section with
-     relocs of an object file, just after the symbols for the object
-     file have been added to the global linker hash table.  The
-     function must look through the relocs and do any special handling
-     required.  This generally means allocating space in the global
-     offset table, and perhaps allocating space for a reloc.  The
+  /* The CHECK_RELOCS function is called after all input files have been
+     opened.  It is called once for each section with relocs of an object
+     file.  The function must look through the relocs and do any special
+     handling required.  This generally means allocating space in the
+     global offset table, and perhaps allocating space for a reloc.  The
      relocs are always passed as Rela structures; if the section
      actually uses Rel structures, the r_addend field will always be
      zero.  */
   bool (*check_relocs)
     (bfd *abfd, struct bfd_link_info *info, asection *o,
      const Elf_Internal_Rela *relocs);
+
+  /* The SIZE_RELATIVE_RELOCS function is called to size relative
+     relocations when mappig sections to segments.  */
+  bool (*size_relative_relocs)
+    (struct bfd_link_info *info, bool *need_layout);
+
+  /* The FINISH_RELATIVE_RELOCS function is called to finish relative
+     relocations in bfd_elf_final_link.  */
+  bool (*finish_relative_relocs)
+    (struct bfd_link_info *info);
 
   /* The CHECK_DIRECTIVES function is called once per input file by
      the add_symbols phase of the ELF backend linker.  The function
@@ -1914,7 +1930,7 @@ struct output_elf_obj_tdata
   /* Linker information.  */
   struct bfd_link_info *link_info;
 
-  int num_section_syms;
+  unsigned int num_section_syms;
   unsigned int shstrtab_section, strtab_section;
 
   /* Segment flags for the PT_GNU_STACK segment.  */
@@ -2630,6 +2646,10 @@ extern int bfd_elf_add_dt_needed_tag
   (bfd *, struct bfd_link_info *);
 extern bool _bfd_elf_link_check_relocs
   (bfd *, struct bfd_link_info *);
+extern bool _bfd_elf_link_iterate_on_relocs
+ (bfd *, struct bfd_link_info *,
+  bool (*) (bfd *, struct bfd_link_info *, asection *,
+	    const Elf_Internal_Rela *));
 
 extern bool bfd_elf_link_record_dynamic_symbol
   (struct bfd_link_info *, struct elf_link_hash_entry *);
@@ -2710,7 +2730,7 @@ extern struct elf_segment_map * _bfd_elf_make_dynamic_segment
   (bfd *, asection *);
 
 extern bool _bfd_elf_map_sections_to_segments
-  (bfd *, struct bfd_link_info *);
+  (bfd *, struct bfd_link_info *, bool *);
 
 extern bool _bfd_elf_is_function_type (unsigned int);
 

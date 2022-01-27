@@ -1,7 +1,7 @@
 /* Machine independent support for QNX Neutrino /proc (process file system)
    for GDB.  Written by Colin Burgess at QNX Software Systems Limited.
 
-   Copyright (C) 2003-2021 Free Software Foundation, Inc.
+   Copyright (C) 2003-2022 Free Software Foundation, Inc.
 
    Contributed by QNX Software Systems Ltd.
 
@@ -656,10 +656,10 @@ nto_procfs_target::files_info ()
 {
   struct inferior *inf = current_inferior ();
 
-  printf_unfiltered ("\tUsing the running image of %s %s via %s.\n",
-		     inf->attach_flag ? "attached" : "child",
-		     target_pid_to_str (inferior_ptid).c_str (),
-		     (nodestr != NULL) ? nodestr : "local node");
+  printf_filtered ("\tUsing the running image of %s %s via %s.\n",
+		   inf->attach_flag ? "attached" : "child",
+		   target_pid_to_str (inferior_ptid).c_str (),
+		   (nodestr != NULL) ? nodestr : "local node");
 }
 
 /* Target to_pid_to_exec_file implementation.  */
@@ -701,17 +701,8 @@ nto_procfs_target::attach (const char *args, int from_tty)
   if (pid == getpid ())
     error (_("Attaching GDB to itself is not a good idea..."));
 
-  if (from_tty)
-    {
-      const char *exec_file = get_exec_file (0);
+  target_announce_attach (from_tty, pid);
 
-      if (exec_file)
-	printf_unfiltered ("Attaching to program `%s', %s\n", exec_file,
-			   target_pid_to_str (ptid_t (pid)).c_str ());
-      else
-	printf_unfiltered ("Attaching to %s\n",
-			   target_pid_to_str (ptid_t (pid)).c_str ());
-    }
   ptid_t ptid = do_attach (ptid_t (pid));
   inf = current_inferior ();
   inferior_appeared (inf, pid);

@@ -1,6 +1,6 @@
 /* Target-dependent code for GNU/Linux AArch64.
 
-   Copyright (C) 2009-2021 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
    Contributed by ARM Ltd.
 
    This file is part of GDB.
@@ -1489,9 +1489,10 @@ aarch64_linux_syscall_record (struct regcache *regcache,
 
   if (syscall_gdb < 0)
     {
-      printf_unfiltered (_("Process record and replay target doesn't "
-			   "support syscall number %s\n"),
-			 plongest (svc_number));
+      fprintf_unfiltered (gdb_stderr,
+			  _("Process record and replay target doesn't "
+			    "support syscall number %s\n"),
+			  plongest (svc_number));
       return -1;
     }
 

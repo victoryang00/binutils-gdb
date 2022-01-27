@@ -1,6 +1,6 @@
 /* GDB CLI commands.
 
-   Copyright (C) 2000-2021 Free Software Foundation, Inc.
+   Copyright (C) 2000-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -24,7 +24,7 @@
 #include "target.h"	/* For baud_rate, remote_debug and remote_timeout.  */
 #include "gdbsupport/gdb_wait.h"	/* For shell escape implementation.  */
 #include "gdbcmd.h"
-#include "gdb_regex.h"	/* Used by apropos_command.  */
+#include "gdbsupport/gdb_regex.h"	/* Used by apropos_command.  */
 #include "gdb_vfork.h"
 #include "linespec.h"
 #include "expression.h"
@@ -501,14 +501,14 @@ pwd_command (const char *args, int from_tty)
 	   safe_strerror (errno));
 
   if (strcmp (cwd.get (), current_directory) != 0)
-    printf_unfiltered (_("Working directory %ps\n (canonically %ps).\n"),
-		       styled_string (file_name_style.style (),
-				      current_directory),
-		       styled_string (file_name_style.style (), cwd.get ()));
+    printf_filtered (_("Working directory %ps\n (canonically %ps).\n"),
+		     styled_string (file_name_style.style (),
+				    current_directory),
+		     styled_string (file_name_style.style (), cwd.get ()));
   else
-    printf_unfiltered (_("Working directory %ps.\n"),
-		       styled_string (file_name_style.style (),
-				      current_directory));
+    printf_filtered (_("Working directory %ps.\n"),
+		     styled_string (file_name_style.style (),
+				    current_directory));
 }
 
 void
@@ -841,7 +841,7 @@ echo_command (const char *text, int from_tty)
   reset_terminal_style (gdb_stdout);
 
   /* Force this output to appear now.  */
-  wrap_here ("");
+  gdb_stdout->wrap_here (0);
   gdb_flush (gdb_stdout);
 }
 
@@ -2445,7 +2445,7 @@ strict == evaluate script according to filename extension, error if not supporte
   cmd_list_element *quit_cmd
     = add_com ("quit", class_support, quit_command, _("\
 Exit gdb.\n\
-Usage: quit [EXPR]\n\
+Usage: quit [EXPR] or exit [EXPR]\n\
 The optional expression EXPR, if present, is evaluated and the result\n\
 used as GDB's exit code.  The default is zero."));
   cmd_list_element *help_cmd
@@ -2453,6 +2453,7 @@ used as GDB's exit code.  The default is zero."));
 	       _("Print list of commands."));
   set_cmd_completer (help_cmd, command_completer);
   add_com_alias ("q", quit_cmd, class_support, 1);
+  add_com_alias ("exit", quit_cmd, class_support, 1);
   add_com_alias ("h", help_cmd, class_support, 1);
 
   add_setshow_boolean_cmd ("verbose", class_support, &info_verbose, _("\

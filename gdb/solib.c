@@ -1,6 +1,6 @@
 /* Handle shared libraries for GDB, the GNU Debugger.
 
-   Copyright (C) 1990-2021 Free Software Foundation, Inc.
+   Copyright (C) 1990-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -29,7 +29,7 @@
 #include "command.h"
 #include "target.h"
 #include "frame.h"
-#include "gdb_regex.h"
+#include "gdbsupport/gdb_regex.h"
 #include "inferior.h"
 #include "gdbsupport/environ.h"
 #include "language.h"

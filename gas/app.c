@@ -1,5 +1,5 @@
 /* This is the Assembler Pre-Processor
-   Copyright (C) 1987-2021 Free Software Foundation, Inc.
+   Copyright (C) 1987-2022 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -748,6 +748,8 @@ do_scrub_chars (size_t (*get) (char *, size_t), char *tostart, size_t tolen)
 	    }
 	  else
 	    {
+	      if (ch != EOF)
+		UNGET (ch);
 	      state = 9;
 	      break;
 	    }

@@ -1,6 +1,6 @@
 /* Output generating routines for GDB.
 
-   Copyright (C) 1999-2021 Free Software Foundation, Inc.
+   Copyright (C) 1999-2022 Free Software Foundation, Inc.
 
    Contributed by Cygnus Solutions.
    Written by Fernando Nasser for Cygnus.
@@ -790,9 +790,9 @@ ui_out::message (const char *format, ...)
 }
 
 void
-ui_out::wrap_hint (const char *identstring)
+ui_out::wrap_hint (int indent)
 {
-  do_wrap_hint (identstring);
+  do_wrap_hint (indent);
 }
 
 void

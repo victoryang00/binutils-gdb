@@ -1,5 +1,5 @@
 /* Target operations for the remote server for GDB.
-   Copyright (C) 2002-2021 Free Software Foundation, Inc.
+   Copyright (C) 2002-2022 Free Software Foundation, Inc.
 
    Contributed by MontaVista Software.
 
@@ -35,7 +35,7 @@ set_desired_thread ()
   client_state &cs = get_client_state ();
   thread_info *found = find_thread_ptid (cs.general_thread);
 
-  current_thread = found;
+  switch_to_thread (found);
   return (current_thread != NULL);
 }
 
@@ -101,7 +101,7 @@ prepare_to_access_memory (void)
       return 1;
     }
 
-  current_thread = thread;
+  switch_to_thread (thread);
   cs.general_thread = ptid_of (thread);
 
   return 0;
@@ -833,6 +833,18 @@ process_stratum_target::thread_handle (ptid_t ptid, gdb_byte **handle,
 				       int *handle_len)
 {
   return false;
+}
+
+thread_info *
+process_stratum_target::thread_pending_parent (thread_info *thread)
+{
+  return nullptr;
+}
+
+thread_info *
+process_stratum_target::thread_pending_child (thread_info *thread)
+{
+  return nullptr;
 }
 
 bool

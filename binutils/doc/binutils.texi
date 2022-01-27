@@ -10,7 +10,7 @@
 
 @copying
 @c man begin COPYRIGHT
-Copyright @copyright{} 1991-2021 Free Software Foundation, Inc.
+Copyright @copyright{} 1991-2022 Free Software Foundation, Inc.
 
 Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3
@@ -256,7 +256,7 @@ program.
 
 @smallexample
 @c man begin SYNOPSIS ar
-ar [@option{-X32_64}] [@option{-}]@var{p}[@var{mod}] [@option{--plugin} @var{name}] [@option{--target} @var{bfdname}] [@option{--output} @var{dirname}] [@option{--record-libdeps} @var{libdeps}] [@var{relpos}] [@var{count}] @var{archive} [@var{member}@dots{}]
+ar [@option{-X32_64}] [@option{-}]@var{p}[@var{mod}] [@option{--plugin} @var{name}] [@option{--target} @var{bfdname}] [@option{--output} @var{dirname}] [@option{--record-libdeps} @var{libdeps}] [@option{--thin}] [@var{relpos}] [@var{count}] @var{archive} [@var{member}@dots{}]
 @c man end
 @end smallexample
 
@@ -507,10 +507,9 @@ with the linker.  In order to build a symbol table, you must omit the
 @samp{ranlib} on the archive.
 
 @item T
-@cindex creating thin archive
-Make the specified @var{archive} a @emph{thin} archive.  If it already
-exists and is a regular archive, the existing members must be present
-in the same directory as @var{archive}.
+Deprecated alias for @option{--thin}.  @option{T} is not recommended because in
+many ar implementations @option{T} has a different meaning, as specified by
+X/Open System Interface.
 
 @item u
 @cindex updating an archive
@@ -602,6 +601,12 @@ line.
 @item --record-libdeps @var{libdeps}
 The @option{--record-libdeps} option is identical to the @option{l} modifier,
 just handled in long form.
+
+@item --thin
+@cindex creating thin archive
+Make the specified @var{archive} a @emph{thin} archive.  If it already
+exists and is a regular archive, the existing members must be present
+in the same directory as @var{archive}.
 
 @end table
 @c man end
@@ -1135,7 +1140,7 @@ Display only undefined symbols (those external to each object file).
 
 @item -U @var{[d|i|l|e|x|h]}
 @itemx --unicode=@var{[default|invalid|locale|escape|hex|highlight]}
-Controls the display of UTF-8 encoded mulibyte characters in strings.
+Controls the display of UTF-8 encoded multibyte characters in strings.
 The default (@option{--unicode=default}) is to give them no special
 treatment.  The @option{--unicode=locale} option displays the sequence
 in the current locale, which may or may not support them.  The options
@@ -2940,7 +2945,7 @@ user.
 
 @item -U @var{[d|i|l|e|x|h]}
 @itemx --unicode=@var{[default|invalid|locale|escape|hex|highlight]}
-Controls the display of UTF-8 encoded mulibyte characters in strings.
+Controls the display of UTF-8 encoded multibyte characters in strings.
 The default (@option{--unicode=default}) is to give them no special
 treatment.  The @option{--unicode=locale} option displays the sequence
 in the current locale, which may or may not support them.  The options
@@ -3233,7 +3238,7 @@ strings [@option{-afovV}] [@option{-}@var{min-len}]
         [@option{-}] [@option{--all}] [@option{--print-file-name}]
         [@option{-T} @var{bfdname}] [@option{--target=}@var{bfdname}]
         [@option{-w}] [@option{--include-all-whitespace}]
-        [@option{-s}] [@option{--output-separator}@var{sep_string}]
+        [@option{-s}] [@option{--output-separator} @var{sep_string}]
         [@option{--help}] [@option{--version}] @var{file}@dots{}
 @c man end
 @end smallexample
@@ -3328,7 +3333,7 @@ and @samp{b} apply to, for example, Unicode UTF-16/UCS-2 encodings).
 
 @item -U @var{[d|i|l|e|x|h]}
 @itemx --unicode=@var{[default|invalid|locale|escape|hex|highlight]}
-Controls the display of UTF-8 encoded mulibyte characters in strings.
+Controls the display of UTF-8 encoded multibyte characters in strings.
 The default (@option{--unicode=default}) is to give them no special
 treatment, and instead rely upon the setting of the
 @option{--encoding} option.  The other values for this option

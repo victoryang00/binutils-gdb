@@ -1,6 +1,6 @@
 /* C/C++ language support for compilation.
 
-   Copyright (C) 2014-2021 Free Software Foundation, Inc.
+   Copyright (C) 2014-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -635,7 +635,7 @@ public:
       PopUserExpressionPolicy::pop_user_expression (&buf);
 
     AddCodeFooterPolicy::add_code_footer (m_instance->scope (), &buf);
-    return buf.string ();
+    return buf.release ();
   }
 
 private:

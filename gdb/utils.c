@@ -1,6 +1,6 @@
 /* General utility routines for GDB, the GNU debugger.
 
-   Copyright (C) 1986-2021 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -48,7 +48,7 @@
 #include "annotate.h"
 #include "filenames.h"
 #include "symfile.h"
-#include "gdb_obstack.h"
+#include "gdbsupport/gdb_obstack.h"
 #include "gdbcore.h"
 #include "top.h"
 #include "main.h"
@@ -63,7 +63,7 @@
 #include <chrono>
 
 #include "interps.h"
-#include "gdb_regex.h"
+#include "gdbsupport/gdb_regex.h"
 #include "gdbsupport/job-control.h"
 #include "gdbsupport/selftest.h"
 #include "gdbsupport/gdb_optional.h"
@@ -76,6 +76,7 @@
 #include "cli-out.h"
 #include "gdbsupport/gdb-safe-ctype.h"
 #include "bt-utils.h"
+#include "gdbsupport/buildargv.h"
 
 void (*deprecated_error_begin_hook) (void);
 
@@ -153,7 +154,7 @@ vwarning (const char *string, va_list args)
 	  target_terminal::ours_for_output ();
 	}
       if (filtered_printing_initialized ())
-	wrap_here ("");		/* Force out any buffered output.  */
+	gdb_stdout->wrap_here (0);	/* Force out any buffered output.  */
       gdb_flush (gdb_stdout);
       if (warning_pre_print)
 	fputs_unfiltered (warning_pre_print, gdb_stderr);
@@ -779,20 +780,6 @@ uinteger_pow (ULONGEST v1, LONGEST v2)
     }
 }
 
-void
-print_spaces (int n, struct ui_file *file)
-{
-  fputs_unfiltered (n_spaces (n), file);
-}
-
-/* Print a host address.  */
-
-void
-gdb_print_host_address_1 (const void *addr, struct ui_file *stream)
-{
-  fprintf_filtered (stream, "%s", host_address_to_string (addr));
-}
-
 
 
 /* An RAII class that sets up to handle input and then tears down
@@ -894,7 +881,7 @@ defaulted_query (const char *ctlstr, const char defchar, va_list args)
     {
       target_terminal::scoped_restore_terminal_state term_state;
       target_terminal::ours_for_output ();
-      wrap_here ("");
+      gdb_stdout->wrap_here (0);
       vfprintf_filtered (gdb_stdout, ctlstr, args);
 
       printf_filtered (_("(%s or %s) [answered %c; "
@@ -1143,103 +1130,6 @@ parse_escape (struct gdbarch *gdbarch, const char **string_ptr)
   return target_char;
 }
 
-/* Print the character C on STREAM as part of the contents of a literal
-   string whose delimiter is QUOTER.  Note that this routine should only
-   be called for printing things which are independent of the language
-   of the program being debugged.
-
-   printchar will normally escape backslashes and instances of QUOTER. If
-   QUOTER is 0, printchar won't escape backslashes or any quoting character.
-   As a side effect, if you pass the backslash character as the QUOTER,
-   printchar will escape backslashes as usual, but not any other quoting
-   character. */
-
-static void
-printchar (int c, do_fputc_ftype do_fputc, ui_file *stream, int quoter)
-{
-  c &= 0xFF;			/* Avoid sign bit follies */
-
-  if (c < 0x20 ||		/* Low control chars */
-      (c >= 0x7F && c < 0xA0) ||	/* DEL, High controls */
-      (sevenbit_strings && c >= 0x80))
-    {				/* high order bit set */
-      do_fputc ('\\', stream);
-
-      switch (c)
-	{
-	case '\n':
-	  do_fputc ('n', stream);
-	  break;
-	case '\b':
-	  do_fputc ('b', stream);
-	  break;
-	case '\t':
-	  do_fputc ('t', stream);
-	  break;
-	case '\f':
-	  do_fputc ('f', stream);
-	  break;
-	case '\r':
-	  do_fputc ('r', stream);
-	  break;
-	case '\033':
-	  do_fputc ('e', stream);
-	  break;
-	case '\007':
-	  do_fputc ('a', stream);
-	  break;
-	default:
-	  {
-	    do_fputc ('0' + ((c >> 6) & 0x7), stream);
-	    do_fputc ('0' + ((c >> 3) & 0x7), stream);
-	    do_fputc ('0' + ((c >> 0) & 0x7), stream);
-	    break;
-	  }
-	}
-    }
-  else
-    {
-      if (quoter != 0 && (c == '\\' || c == quoter))
-	do_fputc ('\\', stream);
-      do_fputc (c, stream);
-    }
-}
-
-/* Print the character C on STREAM as part of the contents of a
-   literal string whose delimiter is QUOTER.  Note that these routines
-   should only be call for printing things which are independent of
-   the language of the program being debugged.  */
-
-void
-fputstr_filtered (const char *str, int quoter, struct ui_file *stream)
-{
-  while (*str)
-    printchar (*str++, fputc_filtered, stream, quoter);
-}
-
-void
-fputstr_unfiltered (const char *str, int quoter, struct ui_file *stream)
-{
-  while (*str)
-    printchar (*str++, fputc_unfiltered, stream, quoter);
-}
-
-void
-fputstrn_filtered (const char *str, int n, int quoter,
-		   struct ui_file *stream)
-{
-  for (int i = 0; i < n; i++)
-    printchar (str[i], fputc_filtered, stream, quoter);
-}
-
-void
-fputstrn_unfiltered (const char *str, int n, int quoter,
-		     do_fputc_ftype do_fputc, struct ui_file *stream)
-{
-  for (int i = 0; i < n; i++)
-    printchar (str[i], do_fputc, stream, quoter);
-}
-
 
 /* Number of lines per page or UINT_MAX if paging is disabled.  */
 static unsigned int lines_per_page;
@@ -1285,9 +1175,8 @@ static bool filter_initialized = false;
    already been counted in chars_printed).  */
 static std::string wrap_buffer;
 
-/* String to indent by if the wrap occurs.  Must not be NULL if wrap_column
-   is non-zero.  */
-static const char *wrap_indent;
+/* String to indent by if the wrap occurs.  */
+static int wrap_indent;
 
 /* Column number on the screen where wrap_buffer begins, or 0 if wrapping
    is not in effect.  */
@@ -1630,34 +1519,15 @@ get_chars_per_line ()
   return chars_per_line;
 }
 
-/* Indicate that if the next sequence of characters overflows the line,
-   a newline should be inserted here rather than when it hits the end.
-   If INDENT is non-null, it is a string to be printed to indent the
-   wrapped part on the next line.  INDENT must remain accessible until
-   the next call to wrap_here() or until a newline is printed through
-   fputs_filtered().
-
-   If the line is already overfull, we immediately print a newline and
-   the indentation, and disable further wrapping.
-
-   If we don't know the width of lines, but we know the page height,
-   we must not wrap words, but should still keep track of newlines
-   that were explicitly printed.
-
-   INDENT should not contain tabs, as that will mess up the char count
-   on the next line.  FIXME.
-
-   This routine is guaranteed to force out any output which has been
-   squirreled away in the wrap_buffer, so wrap_here ((char *)0) can be
-   used to force out output from the wrap_buffer.  */
+/* See ui-file.h.  */
 
 void
-wrap_here (const char *indent)
+ui_file::wrap_here (int indent)
 {
   /* This should have been allocated, but be paranoid anyway.  */
   gdb_assert (filter_initialized);
 
-  flush_wrap_buffer (gdb_stdout);
+  flush_wrap_buffer (this);
   if (chars_per_line == UINT_MAX)	/* No line overflow checking.  */
     {
       wrap_column = 0;
@@ -1665,17 +1535,14 @@ wrap_here (const char *indent)
   else if (chars_printed >= chars_per_line)
     {
       puts_filtered ("\n");
-      if (indent != NULL)
-	puts_filtered (indent);
+      if (indent != 0)
+	puts_filtered (n_spaces (indent));
       wrap_column = 0;
     }
   else
     {
       wrap_column = chars_printed;
-      if (indent == NULL)
-	wrap_indent = "";
-      else
-	wrap_indent = indent;
+      wrap_indent = indent;
       wrap_style = applied_style;
     }
 }
@@ -1697,13 +1564,13 @@ puts_filtered_tabular (char *string, int width, int right)
   gdb_assert (chars_per_line > 0);
   if (chars_per_line == UINT_MAX)
     {
-      fputs_filtered (string, gdb_stdout);
-      fputs_filtered ("\n", gdb_stdout);
+      puts_filtered (string);
+      puts_filtered ("\n");
       return;
     }
 
   if (((chars_printed - 1) / width + 2) * width >= chars_per_line)
-    fputs_filtered ("\n", gdb_stdout);
+    puts_filtered ("\n");
 
   if (width >= chars_per_line)
     width = chars_per_line - 1;
@@ -1720,8 +1587,8 @@ puts_filtered_tabular (char *string, int width, int right)
   while (spaces--)
     spacebuf[spaces] = ' ';
 
-  fputs_filtered (spacebuf, gdb_stdout);
-  fputs_filtered (string, gdb_stdout);
+  puts_filtered (spacebuf);
+  puts_filtered (string);
 }
 
 
@@ -1763,7 +1630,8 @@ fputs_maybe_filtered (const char *linebuffer, struct ui_file *stream,
     return;
 
   /* Don't do any filtering if it is disabled.  */
-  if (stream != gdb_stdout
+  if (!stream->can_page ()
+      || stream != gdb_stdout
       || !pagination_enabled
       || pagination_disabled_for_command
       || batch_flag
@@ -1781,7 +1649,7 @@ fputs_maybe_filtered (const char *linebuffer, struct ui_file *stream,
 		       {
 			 wrap_buffer.clear ();
 			 wrap_column = 0;
-			 wrap_indent = "";
+			 wrap_indent = 0;
 		       });
 
   /* Go through and output each character.  Show line extension
@@ -1886,7 +1754,7 @@ fputs_maybe_filtered (const char *linebuffer, struct ui_file *stream,
 	      /* Now output indentation and wrapped string.  */
 	      if (wrap_column)
 		{
-		  stream->puts (wrap_indent);
+		  stream->puts (n_spaces (wrap_indent));
 
 		  /* Having finished inserting the wrapping we should
 		     restore the style as it was at the WRAP_COLUMN.  */
@@ -1900,14 +1768,9 @@ fputs_maybe_filtered (const char *linebuffer, struct ui_file *stream,
 		     in WRAP_BUFFER.  */
 		  applied_style = save_style;
 
-		  /* FIXME, this strlen is what prevents wrap_indent from
-		     containing tabs.  However, if we recurse to print it
-		     and count its chars, we risk trouble if wrap_indent is
-		     longer than (the user settable) chars_per_line.
-		     Note also that this can set chars_printed > chars_per_line
+		  /* Note that this can set chars_printed > chars_per_line
 		     if we are printing a long string.  */
-		  chars_printed = strlen (wrap_indent)
-		    + (save_chars - wrap_column);
+		  chars_printed = wrap_indent + (save_chars - wrap_column);
 		  wrap_column = 0;	/* And disable fancy wrap */
 		}
 	      else if (did_paginate && stream->can_emit_style_escape ())
@@ -1918,8 +1781,8 @@ fputs_maybe_filtered (const char *linebuffer, struct ui_file *stream,
       if (*lineptr == '\n')
 	{
 	  chars_printed = 0;
-	  wrap_here ((char *) 0);	/* Spit out chars, cancel
-					   further wraps.  */
+	  stream->wrap_here (0); /* Spit out chars, cancel
+				    further wraps.  */
 	  lines_printed++;
 	  /* XXX: The ideal thing would be to call
 	     'stream->putc' here, but we can't because it
@@ -2041,91 +1904,6 @@ fputc_filtered (int c, struct ui_file *stream)
   return c;
 }
 
-/* puts_debug is like fputs_unfiltered, except it prints special
-   characters in printable fashion.  */
-
-void
-puts_debug (char *prefix, char *string, char *suffix)
-{
-  int ch;
-
-  /* Print prefix and suffix after each line.  */
-  static int new_line = 1;
-  static int return_p = 0;
-  static const char *prev_prefix = "";
-  static const char *prev_suffix = "";
-
-  if (*string == '\n')
-    return_p = 0;
-
-  /* If the prefix is changing, print the previous suffix, a new line,
-     and the new prefix.  */
-  if ((return_p || (strcmp (prev_prefix, prefix) != 0)) && !new_line)
-    {
-      fputs_unfiltered (prev_suffix, gdb_stdlog);
-      fputs_unfiltered ("\n", gdb_stdlog);
-      fputs_unfiltered (prefix, gdb_stdlog);
-    }
-
-  /* Print prefix if we printed a newline during the previous call.  */
-  if (new_line)
-    {
-      new_line = 0;
-      fputs_unfiltered (prefix, gdb_stdlog);
-    }
-
-  prev_prefix = prefix;
-  prev_suffix = suffix;
-
-  /* Output characters in a printable format.  */
-  while ((ch = *string++) != '\0')
-    {
-      switch (ch)
-	{
-	default:
-	  if (gdb_isprint (ch))
-	    fputc_unfiltered (ch, gdb_stdlog);
-
-	  else
-	    fprintf_unfiltered (gdb_stdlog, "\\x%02x", ch & 0xff);
-	  break;
-
-	case '\\':
-	  fputs_unfiltered ("\\\\", gdb_stdlog);
-	  break;
-	case '\b':
-	  fputs_unfiltered ("\\b", gdb_stdlog);
-	  break;
-	case '\f':
-	  fputs_unfiltered ("\\f", gdb_stdlog);
-	  break;
-	case '\n':
-	  new_line = 1;
-	  fputs_unfiltered ("\\n", gdb_stdlog);
-	  break;
-	case '\r':
-	  fputs_unfiltered ("\\r", gdb_stdlog);
-	  break;
-	case '\t':
-	  fputs_unfiltered ("\\t", gdb_stdlog);
-	  break;
-	case '\v':
-	  fputs_unfiltered ("\\v", gdb_stdlog);
-	  break;
-	}
-
-      return_p = ch == '\r';
-    }
-
-  /* Print suffix if we printed a newline.  */
-  if (new_line)
-    {
-      fputs_unfiltered (suffix, gdb_stdlog);
-      fputs_unfiltered ("\n", gdb_stdlog);
-    }
-}
-
-
 /* Print a variable number of ARGS using format FORMAT.  If this
    information is going to put the amount written (since the last call
    to REINITIALIZE_MORE_FILTER or the last page break) over the page size,
@@ -2180,7 +1958,7 @@ vfprintf_unfiltered (struct ui_file *stream, const char *format, va_list args)
       /* Print the message.  */
       string_file sfile;
       cli_ui_out (&sfile, 0).vmessage (ui_file_style (), format, args);
-      std::string linebuffer = std::move (sfile.string ());
+      const std::string &linebuffer = sfile.string ();
       fputs_unfiltered (linebuffer.c_str (), stream);
 
       size_t len = linebuffer.length ();
@@ -2303,7 +2081,7 @@ puts_unfiltered (const char *string)
 
 /* Return a pointer to N spaces and a null.  The pointer is good
    until the next call to here.  */
-char *
+const char *
 n_spaces (int n)
 {
   char *t;
@@ -2936,27 +2714,6 @@ print_core_address (struct gdbarch *gdbarch, CORE_ADDR address)
     return hex_string_custom (address, 16);
 }
 
-/* Callback hash_f for htab_create_alloc or htab_create_alloc_ex.  */
-
-hashval_t
-core_addr_hash (const void *ap)
-{
-  const CORE_ADDR *addrp = (const CORE_ADDR *) ap;
-
-  return *addrp;
-}
-
-/* Callback eq_f for htab_create_alloc or htab_create_alloc_ex.  */
-
-int
-core_addr_eq (const void *ap, const void *bp)
-{
-  const CORE_ADDR *addr_ap = (const CORE_ADDR *) ap;
-  const CORE_ADDR *addr_bp = (const CORE_ADDR *) bp;
-
-  return *addr_ap == *addr_bp;
-}
-
 /* Convert a string back into a CORE_ADDR.  */
 CORE_ADDR
 string_to_core_addr (const char *my_string)
@@ -3056,30 +2813,6 @@ gdb_argv_as_array_view_test ()
 
 #endif /* GDB_SELF_TEST */
 
-/* Allocation function for the libiberty hash table which uses an
-   obstack.  The obstack is passed as DATA.  */
-
-void *
-hashtab_obstack_allocate (void *data, size_t size, size_t count)
-{
-  size_t total = size * count;
-  void *ptr = obstack_alloc ((struct obstack *) data, total);
-
-  memset (ptr, 0, total);
-  return ptr;
-}
-
-/* Trivial deallocation function for the libiberty splay tree and hash
-   table - don't deallocate anything.  Rely on later deletion of the
-   obstack.  DATA will be the obstack, although it is not needed
-   here.  */
-
-void
-dummy_obstack_deallocate (void *object, void *data)
-{
-  return;
-}
-
 /* Simple, portable version of dirname that does not modify its
    argument.  */
 
@@ -3104,45 +2837,6 @@ ldirname (const char *filename)
     dirname[base++ - filename] = '.';
 
   return dirname;
-}
-
-/* See utils.h.  */
-
-void
-gdb_argv::reset (const char *s)
-{
-  char **argv = buildargv (s);
-
-  freeargv (m_argv);
-  m_argv = argv;
-}
-
-#define AMBIGUOUS_MESS1	".\nMatching formats:"
-#define AMBIGUOUS_MESS2	\
-  ".\nUse \"set gnutarget format-name\" to specify the format."
-
-std::string
-gdb_bfd_errmsg (bfd_error_type error_tag, char **matching)
-{
-  char **p;
-
-  /* Check if errmsg just need simple return.  */
-  if (error_tag != bfd_error_file_ambiguously_recognized || matching == NULL)
-    return bfd_errmsg (error_tag);
-
-  std::string ret (bfd_errmsg (error_tag));
-  ret += AMBIGUOUS_MESS1;
-
-  for (p = matching; *p; p++)
-    {
-      ret += " ";
-      ret += *p;
-    }
-  ret += AMBIGUOUS_MESS2;
-
-  xfree (matching);
-
-  return ret;
 }
 
 /* Return ARGS parsed as a valid pid, or throw an error.  */

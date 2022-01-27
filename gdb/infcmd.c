@@ -1,6 +1,6 @@
 /* Memory-access and commands for "inferior" process, for GDB.
 
-   Copyright (C) 1986-2021 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -117,7 +117,7 @@ show_inferior_tty_command (struct ui_file *file, int from_tty,
      directly.  */
   const std::string &inferior_tty = current_inferior ()->tty ();
 
-  fprintf_filtered (gdb_stdout,
+  fprintf_filtered (file,
 		    _("Terminal for future runs of program being debugged "
 		      "is \"%s\".\n"), inferior_tty.c_str ());
 }
@@ -177,13 +177,13 @@ show_cwd_command (struct ui_file *file, int from_tty,
   const std::string &cwd = current_inferior ()->cwd ();
 
   if (cwd.empty ())
-    fprintf_filtered (gdb_stdout,
+    fprintf_filtered (file,
 		      _("\
 You have not set the inferior's current working directory.\n\
 The inferior will inherit GDB's cwd if native debugging, or the remote\n\
 server's cwd if remote debugging.\n"));
   else
-    fprintf_filtered (gdb_stdout,
+    fprintf_filtered (file,
 		      _("Current working directory that will be used "
 			"when starting the inferior is \"%s\".\n"),
 		      cwd.c_str ());
@@ -395,7 +395,7 @@ run_command_1 (const char *args, int from_tty, enum run_how run_how)
      to check again here.  Since reopen_exec_file doesn't do anything
      if the timestamp hasn't changed, I don't see the harm.  */
   reopen_exec_file ();
-  reread_symbols ();
+  reread_symbols (from_tty);
 
   gdb::unique_xmalloc_ptr<char> stripped = strip_bg_char (args, &async_exec);
   args = stripped.get ();
@@ -1103,7 +1103,7 @@ jump_command (const char *arg, int from_tty)
   if (from_tty)
     {
       printf_filtered (_("Continuing at "));
-      fputs_filtered (paddress (gdbarch, addr), gdb_stdout);
+      puts_filtered (paddress (gdbarch, addr));
       printf_filtered (".\n");
     }
 
@@ -2349,12 +2349,11 @@ kill_command (const char *arg, int from_tty)
   int infnum = current_inferior ()->num;
 
   target_kill ();
+  bfd_cache_close_all ();
 
   if (print_inferior_events)
-    printf_unfiltered (_("[Inferior %d (%s) killed]\n"),
-		       infnum, pid_str.c_str ());
-
-  bfd_cache_close_all ();
+    printf_filtered (_("[Inferior %d (%s) killed]\n"),
+		     infnum, pid_str.c_str ());
 }
 
 /* Used in `attach&' command.  Proceed threads of inferior INF iff
@@ -2399,7 +2398,7 @@ setup_inferior (int from_tty)
   else
     {
       reopen_exec_file ();
-      reread_symbols ();
+      reread_symbols (from_tty);
     }
 
   /* Take any necessary post-attaching actions for this platform.  */
@@ -2541,6 +2540,18 @@ attach_command (const char *args, int from_tty)
   /* to_attach should push the target, so after this point we
      shouldn't refer to attach_target again.  */
   attach_target = NULL;
+
+  if (debug_infrun)
+    {
+      infrun_debug_printf ("immediately after attach:");
+      for (thread_info *thread : inferior->non_exited_threads ())
+	infrun_debug_printf ("  thread %s, executing = %d, resumed = %d, "
+			     "state = %s",
+			     thread->ptid.to_string ().c_str (),
+			     thread->executing (),
+			     thread->resumed (),
+			     thread_state_string (thread->state));
+    }
 
   /* Set up the "saved terminal modes" of the inferior
      based on what modes we are starting it with.  */

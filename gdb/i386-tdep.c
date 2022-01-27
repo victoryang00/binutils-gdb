@@ -1,6 +1,6 @@
 /* Intel 386 target-dependent stuff.
 
-   Copyright (C) 1988-2021 Free Software Foundation, Inc.
+   Copyright (C) 1988-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -67,6 +67,8 @@
 #include <algorithm>
 #include <unordered_set>
 #include "producer.h"
+#include "infcall.h"
+#include "maint.h"
 
 /* Register names.  */
 
@@ -2777,6 +2779,47 @@ i386_thiscall_push_dummy_call (struct gdbarch *gdbarch, struct value *function,
   if (thiscall)
     regcache->cooked_write (I386_ECX_REGNUM,
 			    value_contents_all (args[0]).data ());
+
+  /* If the PLT is position-independent, the SYSTEM V ABI requires %ebx to be
+     set to the address of the GOT when doing a call to a PLT address.
+     Note that we do not try to determine whether the PLT is
+     position-independent, we just set the register regardless.  */
+  CORE_ADDR func_addr = find_function_addr (function, nullptr, nullptr);
+  if (in_plt_section (func_addr))
+    {
+      struct objfile *objf = nullptr;
+      asection *asect = nullptr;
+      obj_section *osect = nullptr;
+
+      /* Get object file containing func_addr.  */
+      obj_section *func_section = find_pc_section (func_addr);
+      if (func_section != nullptr)
+	objf = func_section->objfile;
+
+      if (objf != nullptr)
+	{
+	  /* Get corresponding .got.plt or .got section.  */
+	  asect = bfd_get_section_by_name (objf->obfd, ".got.plt");
+	  if (asect == nullptr)
+	    asect = bfd_get_section_by_name (objf->obfd, ".got");
+	}
+
+      if (asect != nullptr)
+	/* Translate asection to obj_section.  */
+	osect = maint_obj_section_from_bfd_section (objf->obfd, asect, objf);
+
+      if (osect != nullptr)
+	{
+	  /* Store the section address in %ebx.  */
+	  store_unsigned_integer (buf, 4, byte_order, osect->addr ());
+	  regcache->cooked_write (I386_EBX_REGNUM, buf);
+	}
+      else
+	{
+	  /* If we would only do this for a position-independent PLT, it would
+	     make sense to issue a warning here.  */
+	}
+    }
 
   /* MarkK wrote: This "+ 8" is all over the place:
      (i386_frame_this_id, i386_sigtramp_frame_this_id,
@@ -6821,8 +6864,9 @@ Do you want to stop the program?"),
 
       /* XXX */
     case 0xcc:    /* int3 */
-      printf_unfiltered (_("Process record does not support instruction "
-			   "int3.\n"));
+      fprintf_unfiltered (gdb_stderr,
+			  _("Process record does not support instruction "
+			    "int3.\n"));
       ir.addr -= 1;
       goto no_support;
       break;
@@ -6838,9 +6882,10 @@ Do you want to stop the program?"),
 	if (interrupt != 0x80
 	    || tdep->i386_intx80_record == NULL)
 	  {
-	    printf_unfiltered (_("Process record does not support "
-				 "instruction int 0x%02x.\n"),
-			       interrupt);
+	    fprintf_unfiltered (gdb_stderr,
+				_("Process record does not support "
+				  "instruction int 0x%02x.\n"),
+				interrupt);
 	    ir.addr -= 2;
 	    goto no_support;
 	  }
@@ -6852,8 +6897,9 @@ Do you want to stop the program?"),
 
       /* XXX */
     case 0xce:    /* into */
-      printf_unfiltered (_("Process record does not support "
-			   "instruction into.\n"));
+      fprintf_unfiltered (gdb_stderr,
+			  _("Process record does not support "
+			    "instruction into.\n"));
       ir.addr -= 1;
       goto no_support;
       break;
@@ -6863,8 +6909,9 @@ Do you want to stop the program?"),
       break;
 
     case 0x62:    /* bound */
-      printf_unfiltered (_("Process record does not support "
-			   "instruction bound.\n"));
+      fprintf_unfiltered (gdb_stderr,
+			  _("Process record does not support "
+			    "instruction bound.\n"));
       ir.addr -= 1;
       goto no_support;
       break;
@@ -6899,15 +6946,17 @@ Do you want to stop the program?"),
       break;
 
     case 0x0f30:    /* wrmsr */
-      printf_unfiltered (_("Process record does not support "
-			   "instruction wrmsr.\n"));
+      fprintf_unfiltered (gdb_stderr,
+			  _("Process record does not support "
+			    "instruction wrmsr.\n"));
       ir.addr -= 2;
       goto no_support;
       break;
 
     case 0x0f32:    /* rdmsr */
-      printf_unfiltered (_("Process record does not support "
-			   "instruction rdmsr.\n"));
+      fprintf_unfiltered (gdb_stderr,
+			  _("Process record does not support "
+			    "instruction rdmsr.\n"));
       ir.addr -= 2;
       goto no_support;
       break;
@@ -6927,8 +6976,9 @@ Do you want to stop the program?"),
 	  }
 	if (tdep->i386_sysenter_record == NULL)
 	  {
-	    printf_unfiltered (_("Process record does not support "
-				 "instruction sysenter.\n"));
+	    fprintf_unfiltered (gdb_stderr,
+				_("Process record does not support "
+				  "instruction sysenter.\n"));
 	    ir.addr -= 2;
 	    goto no_support;
 	  }
@@ -6939,8 +6989,9 @@ Do you want to stop the program?"),
       break;
 
     case 0x0f35:    /* sysexit */
-      printf_unfiltered (_("Process record does not support "
-			   "instruction sysexit.\n"));
+      fprintf_unfiltered (gdb_stderr,
+			  _("Process record does not support "
+			    "instruction sysexit.\n"));
       ir.addr -= 2;
       goto no_support;
       break;
@@ -6950,8 +7001,9 @@ Do you want to stop the program?"),
 	int ret;
 	if (tdep->i386_syscall_record == NULL)
 	  {
-	    printf_unfiltered (_("Process record does not support "
-				 "instruction syscall.\n"));
+	    fprintf_unfiltered (gdb_stderr,
+				_("Process record does not support "
+				  "instruction syscall.\n"));
 	    ir.addr -= 2;
 	    goto no_support;
 	  }
@@ -6962,8 +7014,9 @@ Do you want to stop the program?"),
       break;
 
     case 0x0f07:    /* sysret */
-      printf_unfiltered (_("Process record does not support "
-			   "instruction sysret.\n"));
+      fprintf_unfiltered (gdb_stderr,
+			  _("Process record does not support "
+			    "instruction sysret.\n"));
       ir.addr -= 2;
       goto no_support;
       break;
@@ -6976,8 +7029,9 @@ Do you want to stop the program?"),
       break;
 
     case 0xf4:    /* hlt */
-      printf_unfiltered (_("Process record does not support "
-			   "instruction hlt.\n"));
+      fprintf_unfiltered (gdb_stderr,
+			  _("Process record does not support "
+			    "instruction hlt.\n"));
       ir.addr -= 1;
       goto no_support;
       break;
@@ -8095,10 +8149,11 @@ reswitch_prefix_add:
   return 0;
 
  no_support:
-  printf_unfiltered (_("Process record does not support instruction 0x%02x "
-		       "at address %s.\n"),
-		     (unsigned int) (opcode),
-		     paddress (gdbarch, ir.orig_addr));
+  fprintf_unfiltered (gdb_stderr,
+		      _("Process record does not support instruction 0x%02x "
+			"at address %s.\n"),
+		      (unsigned int) (opcode),
+		      paddress (gdbarch, ir.orig_addr));
   return -1;
 }
 
@@ -8937,14 +8992,14 @@ i386_mpx_info_bounds (const char *args, int from_tty)
   if (gdbarch_bfd_arch_info (gdbarch)->arch != bfd_arch_i386
       || !i386_mpx_enabled ())
     {
-      printf_unfiltered (_("Intel Memory Protection Extensions not "
-			   "supported on this target.\n"));
+      printf_filtered (_("Intel Memory Protection Extensions not "
+			 "supported on this target.\n"));
       return;
     }
 
   if (args == NULL)
     {
-      printf_unfiltered (_("Address of pointer variable expected.\n"));
+      printf_filtered (_("Address of pointer variable expected.\n"));
       return;
     }
 

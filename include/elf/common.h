@@ -1,5 +1,5 @@
 /* ELF support for BFD.
-   Copyright (C) 1991-2021 Free Software Foundation, Inc.
+   Copyright (C) 1991-2022 Free Software Foundation, Inc.
 
    Written by Fred Fish @ Cygnus Support, from information published
    in "UNIX System V Release 4, Programmers Guide: ANSI C and
@@ -1392,6 +1392,8 @@
 #define AT_FREEBSD_ENVC         30      /* Environment count. */
 #define AT_FREEBSD_ENVV         31      /* Environment vvector. */
 #define AT_FREEBSD_PS_STRINGS   32      /* struct ps_strings. */
+#define AT_FREEBSD_FXRNG        33      /* Pointer to root RNG seed version. */
+#define AT_FREEBSD_KPRELOAD     34      /* Base of vdso. */
 
 #define AT_SUN_UID      2000    /* Effective user ID.  */
 #define AT_SUN_RUID     2001    /* Real user ID.  */
@@ -1404,7 +1406,9 @@
 #define AT_SUN_PLATFORM 2008    /* Platform name string.  */
 #define AT_SUN_CAP_HW1	2009	/* Machine dependent hints about
 				   processor capabilities.  */
+#ifndef AT_SUN_HWCAP
 #define AT_SUN_HWCAP	AT_SUN_CAP_HW1 /* For backward compat only.  */
+#endif
 #define AT_SUN_IFLUSH   2010    /* Should flush icache? */
 #define AT_SUN_CPU      2011    /* CPU name string.  */
 #define AT_SUN_EMUL_ENTRY 2012	/* COFF entry point address.  */

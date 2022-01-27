@@ -1,6 +1,6 @@
 /* Print values for GNU debugger GDB.
 
-   Copyright (C) 1986-2021 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -317,7 +317,7 @@ print_formatted (struct value *val, int size,
 
 	case 'i':
 	  /* We often wrap here if there are long symbolic names.  */
-	  wrap_here ("    ");
+	  stream->wrap_here (4);
 	  next_address = (value_address (val)
 			  + gdb_print_insn (type->arch (),
 					    value_address (val), stream,
@@ -826,7 +826,7 @@ find_instruction_backward (struct gdbarch *gdbarch, CORE_ADDR addr,
 	     is calculated after the loop.  */
 	  printf_filtered (_("No line number information available "
 			     "for address "));
-	  wrap_here ("  ");
+	  gdb_stdout->wrap_here (2);
 	  print_address (gdbarch, loop_start - 1, gdb_stdout);
 	  printf_filtered ("\n");
 	  break;
@@ -1155,7 +1155,7 @@ do_examine (struct format_data fmt, struct gdbarch *gdbarch, CORE_ADDR addr)
 	}
 
       if (format == 'i')
-	fputs_filtered (pc_prefix (next_address), gdb_stdout);
+	puts_filtered (pc_prefix (next_address));
       print_address (next_gdbarch, next_address, gdb_stdout);
       printf_filtered (":");
       for (i = maxelts;
@@ -1498,7 +1498,7 @@ output_command (const char *exp, int from_tty)
 
   annotate_value_end ();
 
-  wrap_here ("");
+  gdb_stdout->wrap_here (0);
   gdb_flush (gdb_stdout);
 }
 
@@ -1683,7 +1683,7 @@ info_address_command (const char *exp, int from_tty)
     }
 
   printf_filtered ("Symbol \"");
-  fputs_filtered (sym->print_name (), gdb_stdout);
+  puts_filtered (sym->print_name ());
   printf_filtered ("\" is ");
   val = SYMBOL_VALUE (sym);
   if (SYMBOL_OBJFILE_OWNED (sym))
@@ -2058,7 +2058,7 @@ map_display_numbers (const char *args,
 				      return item->number == num;
 				    });
 	  if (iter == all_displays.end ())
-	    printf_unfiltered (_("No display number %d.\n"), num);
+	    printf_filtered (_("No display number %d.\n"), num);
 	  else
 	    function (iter->get ());
 	}
@@ -2184,9 +2184,9 @@ do_one_display (struct display *d)
 	}
       catch (const gdb_exception_error &ex)
 	{
-	  fprintf_filtered (gdb_stdout, _("%p[<error: %s>%p]\n"),
-			    metadata_style.style ().ptr (), ex.what (),
-			    nullptr);
+	  printf_filtered (_("%p[<error: %s>%p]\n"),
+			   metadata_style.style ().ptr (), ex.what (),
+			   nullptr);
 	}
     }
   else
@@ -2253,7 +2253,7 @@ disable_display (int num)
 	d->enabled_p = false;
 	return;
       }
-  printf_unfiltered (_("No display number %d.\n"), num);
+  printf_filtered (_("No display number %d.\n"), num);
 }
 
 void
@@ -2274,7 +2274,7 @@ static void
 info_display_command (const char *ignore, int from_tty)
 {
   if (all_displays.empty ())
-    printf_unfiltered (_("There are no auto-display expressions now.\n"));
+    printf_filtered (_("There are no auto-display expressions now.\n"));
   else
     printf_filtered (_("Auto-display expressions now in effect:\n\
 Num Enb Expression\n"));
@@ -2895,7 +2895,7 @@ printf_command (const char *arg, int from_tty)
 {
   ui_printf (arg, gdb_stdout);
   reset_terminal_style (gdb_stdout);
-  wrap_here ("");
+  gdb_stdout->wrap_here (0);
   gdb_stdout->flush ();
 }
 

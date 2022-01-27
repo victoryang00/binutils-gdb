@@ -1,6 +1,6 @@
 /* Target-dependent code for GNU/Linux, architecture independent.
 
-   Copyright (C) 2009-2021 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -31,12 +31,12 @@
 #include "inferior.h"
 #include "cli/cli-utils.h"
 #include "arch-utils.h"
-#include "gdb_obstack.h"
+#include "gdbsupport/gdb_obstack.h"
 #include "observable.h"
 #include "objfiles.h"
 #include "infcall.h"
 #include "gdbcmd.h"
-#include "gdb_regex.h"
+#include "gdbsupport/gdb_regex.h"
 #include "gdbsupport/enum-flags.h"
 #include "gdbsupport/gdb_optional.h"
 #include "gcore.h"
@@ -379,6 +379,13 @@ linux_get_siginfo_type_with_fields (struct gdbarch *gdbarch,
   append_composite_type_field (type, "si_band", long_type);
   append_composite_type_field (type, "si_fd", int_type);
   append_composite_type_field (sifields_type, "_sigpoll", type);
+
+  /* _sigsys */
+  type = arch_composite_type (gdbarch, NULL, TYPE_CODE_STRUCT);
+  append_composite_type_field (type, "_call_addr", void_ptr_type);
+  append_composite_type_field (type, "_syscall", int_type);
+  append_composite_type_field (type, "_arch", uint_type);
+  append_composite_type_field (sifields_type, "_sigsys", type);
 
   /* struct siginfo */
   siginfo_type = arch_composite_type (gdbarch, NULL, TYPE_CODE_STRUCT);

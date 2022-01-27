@@ -772,6 +772,8 @@ PKG_CONFIG_PATH
 PKG_CONFIG
 HAVE_NATIVE_GCORE_TARGET
 TARGET_OBS
+ENABLE_BFD_64_BIT_FALSE
+ENABLE_BFD_64_BIT_TRUE
 subdirs
 GDB_DATADIR
 DEBUGDIR
@@ -910,6 +912,7 @@ with_python
 with_python_libdir
 with_guile
 enable_source_highlight
+enable_threading
 with_intel_pt
 with_libipt_prefix
 with_libipt_type
@@ -1597,6 +1600,8 @@ Optional Features:
   --disable-rpath         do not hardcode runtime library paths
   --enable-source-highlight
                           enable source-highlight for source listings
+  --enable-threading      include support for parallel processing of data
+                          (yes/no)
   --enable-werror         treat compile warnings as errors
   --enable-build-warnings enable build-time compiler warnings if gcc is used
   --enable-gdb-build-warnings
@@ -6646,17 +6651,70 @@ esac
 fi
 
 
-# Check whether to enable 64-bit support on 32-bit hosts
 # Check whether --enable-64-bit-bfd was given.
 if test "${enable_64_bit_bfd+set}" = set; then :
-  enableval=$enable_64_bit_bfd; case "${enableval}" in
-  yes)  want64=true  ;;
-  no)   want64=false ;;
-  *)    as_fn_error $? "bad value ${enableval} for 64-bit-bfd option" "$LINENO" 5 ;;
+  enableval=$enable_64_bit_bfd; case $enableval in #(
+  yes|no) :
+     ;; #(
+  *) :
+    as_fn_error $? "bad value ${enableval} for 64-bit-bfd option" "$LINENO" 5 ;; #(
+  *) :
+     ;;
 esac
 else
-  want64=false
+  enable_64_bit_bfd=no
 fi
+
+
+if test "x$enable_64_bit_bfd" = "xno"; then :
+    # The cast to long int works around a bug in the HP C Compiler
+# version HP92453-01 B.11.11.23709.GP, which incorrectly rejects
+# declarations like `int a3[[(sizeof (unsigned char)) >= 0]];'.
+# This bug is HP SR number 8606223364.
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking size of void *" >&5
+$as_echo_n "checking size of void *... " >&6; }
+if ${ac_cv_sizeof_void_p+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if ac_fn_c_compute_int "$LINENO" "(long int) (sizeof (void *))" "ac_cv_sizeof_void_p"        "$ac_includes_default"; then :
+
+else
+  if test "$ac_cv_type_void_p" = yes; then
+     { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error 77 "cannot compute sizeof (void *)
+See \`config.log' for more details" "$LINENO" 5; }
+   else
+     ac_cv_sizeof_void_p=0
+   fi
+fi
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_sizeof_void_p" >&5
+$as_echo "$ac_cv_sizeof_void_p" >&6; }
+
+
+
+cat >>confdefs.h <<_ACEOF
+#define SIZEOF_VOID_P $ac_cv_sizeof_void_p
+_ACEOF
+
+
+  if test "x$ac_cv_sizeof_void_p" = "x8"; then :
+  enable_64_bit_bfd=yes
+fi
+
+fi
+
+ if test "x$enable_64_bit_bfd" = "xyes"; then
+  ENABLE_BFD_64_BIT_TRUE=
+  ENABLE_BFD_64_BIT_FALSE='#'
+else
+  ENABLE_BFD_64_BIT_TRUE='#'
+  ENABLE_BFD_64_BIT_FALSE=
+fi
+
+
 
 # Provide defaults for some variables set by the per-host and per-target
 # configuration.
@@ -6706,7 +6764,7 @@ fi
     done
 
     # Check whether this target needs 64-bit CORE_ADDR
-    if test x${want64} = xfalse; then
+    if test x${enable_64_bit_bfd} = xno; then
       . ${srcdir}/../bfd/config.bfd
     fi
 
@@ -6719,55 +6777,7 @@ fi
 done
 
 if test x${all_targets} = xtrue; then
-
-  # We want all 64-bit targets if we either:
-  #  - run on a 64-bit host  or
-  #  - already require 64-bit support for some other target  or
-  #  - the --enable-64-bit-bfd option was supplied
-  # Otherwise we only support all 32-bit targets.
-  #
-  # NOTE: This test must be in sync with the corresponding
-  #       tests in BFD!
-
-  if test x${want64} = xfalse; then
-    # The cast to long int works around a bug in the HP C Compiler
-# version HP92453-01 B.11.11.23709.GP, which incorrectly rejects
-# declarations like `int a3[[(sizeof (unsigned char)) >= 0]];'.
-# This bug is HP SR number 8606223364.
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking size of long" >&5
-$as_echo_n "checking size of long... " >&6; }
-if ${ac_cv_sizeof_long+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if ac_fn_c_compute_int "$LINENO" "(long int) (sizeof (long))" "ac_cv_sizeof_long"        "$ac_includes_default"; then :
-
-else
-  if test "$ac_cv_type_long" = yes; then
-     { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
-$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error 77 "cannot compute sizeof (long)
-See \`config.log' for more details" "$LINENO" 5; }
-   else
-     ac_cv_sizeof_long=0
-   fi
-fi
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_sizeof_long" >&5
-$as_echo "$ac_cv_sizeof_long" >&6; }
-
-
-
-cat >>confdefs.h <<_ACEOF
-#define SIZEOF_LONG $ac_cv_sizeof_long
-_ACEOF
-
-
-    if test "x${ac_cv_sizeof_long}" = "x8"; then
-      want64=true
-    fi
-  fi
-  if test x${want64} = xtrue; then
+  if test x${enable_64_bit_bfd} = xyes; then
     TARGET_OBS='$(ALL_TARGET_OBS) $(ALL_64_TARGET_OBS)'
   else
     TARGET_OBS='$(ALL_TARGET_OBS)'
@@ -14055,6 +14065,22 @@ fi
 done
 
 
+  # ----------------------- #
+  # Check for threading.    #
+  # ----------------------- #
+
+  # Check whether --enable-threading was given.
+if test "${enable_threading+set}" = set; then :
+  enableval=$enable_threading; case "$enableval" in
+    yes) want_threading=yes ;;
+    no) want_threading=no ;;
+    *) as_fn_error $? "bad value $enableval for threading" "$LINENO" 5 ;;
+    esac
+else
+  want_threading=yes
+fi
+
+
   # Check for std::thread.  This does not work on some platforms, like
   # mingw and DJGPP.
   ac_ext=cpp
@@ -14752,10 +14778,13 @@ done
     LIBS="$save_LIBS"
     CXXFLAGS="$save_CXXFLAGS"
   fi
-  if test "$gdb_cv_cxx_std_thread" = "yes"; then
+
+  if test "$want_threading" = "yes"; then
+    if test "$gdb_cv_cxx_std_thread" = "yes"; then
 
 $as_echo "#define CXX_STD_THREAD 1" >>confdefs.h
 
+    fi
   fi
   ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -16961,6 +16990,64 @@ _ACEOF
 
 
 
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking the compiler type" >&5
+$as_echo_n "checking the compiler type... " >&6; }
+if ${gdb_cv_compiler_type+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  gdb_cv_compiler_type=unknown
+  if test "$gdb_cv_compiler_type" = unknown; then
+     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+                          #if !defined __GNUC__ || defined __clang__
+                          #error not gcc
+                          #endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  gdb_cv_compiler_type=gcc
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  fi
+
+  if test "$gdb_cv_compiler_type" = unknown; then
+     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+                          #ifndef __clang__
+                          #error not clang
+                          #endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  gdb_cv_compiler_type=clang
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  fi
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $gdb_cv_compiler_type" >&5
+$as_echo "$gdb_cv_compiler_type" >&6; }
+
+ GDB_COMPILER_TYPE="$gdb_cv_compiler_type"
+
+
 # Check whether --enable-werror was given.
 if test "${enable_werror+set}" = set; then :
   enableval=$enable_werror; case "${enableval}" in
@@ -16997,9 +17084,15 @@ build_warnings="-Wall -Wpointer-arith \
 -Wdeprecated-copy-dtor \
 -Wredundant-move \
 -Wmissing-declarations \
--Wmissing-prototypes \
 -Wstrict-null-sentinel \
 "
+
+# The -Wmissing-prototypes flag will be accepted by GCC, but results
+# in a warning being printed about the flag not being valid for C++,
+# this is something to do with using ccache, and argument ordering.
+if test "$GDB_COMPILER_TYPE" != gcc; then
+  build_warnings="$build_warnings -Wmissing-prototypes"
+fi
 
 case "${host}" in
   *-*-mingw32*)
@@ -20065,6 +20158,10 @@ LTLIBOBJS=$ac_ltlibobjs
 
 if test -z "${MAINTAINER_MODE_TRUE}" && test -z "${MAINTAINER_MODE_FALSE}"; then
   as_fn_error $? "conditional \"MAINTAINER_MODE\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_BFD_64_BIT_TRUE}" && test -z "${ENABLE_BFD_64_BIT_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_BFD_64_BIT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_PYTHON_TRUE}" && test -z "${HAVE_PYTHON_FALSE}"; then

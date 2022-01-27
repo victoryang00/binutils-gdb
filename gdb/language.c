@@ -1,6 +1,6 @@
 /* Multiple source language support for GDB.
 
-   Copyright (C) 1991-2021 Free Software Foundation, Inc.
+   Copyright (C) 1991-2022 Free Software Foundation, Inc.
 
    Contributed by the Department of Computer Science at the State University
    of New York at Buffalo.
@@ -114,12 +114,12 @@ show_language_command (struct ui_file *file, int from_tty,
   enum language flang;		/* The language of the frame.  */
 
   if (language_mode == language_mode_auto)
-    fprintf_filtered (gdb_stdout,
+    fprintf_filtered (file,
 		      _("The current source language is "
 			"\"auto; currently %s\".\n"),
 		      current_language->name ());
   else
-    fprintf_filtered (gdb_stdout,
+    fprintf_filtered (file,
 		      _("The current source language is \"%s\".\n"),
 		      current_language->name ());
 
@@ -132,7 +132,7 @@ show_language_command (struct ui_file *file, int from_tty,
       if (flang != language_unknown
 	  && language_mode == language_mode_manual
 	  && current_language->la_language != flang)
-	printf_filtered ("%s\n", _(lang_frame_mismatch_warn));
+	fprintf_filtered (file, "%s\n", _(lang_frame_mismatch_warn));
     }
 }
 
@@ -220,12 +220,12 @@ show_range_command (struct ui_file *file, int from_tty,
 			  "Unrecognized range check setting.");
 	}
 
-      fprintf_filtered (gdb_stdout,
+      fprintf_filtered (file,
 			_("Range checking is \"auto; currently %s\".\n"),
 			tmp);
     }
   else
-    fprintf_filtered (gdb_stdout, _("Range checking is \"%s\".\n"),
+    fprintf_filtered (file, _("Range checking is \"%s\".\n"),
 		      value);
 
   if (range_check == range_check_warn
@@ -296,13 +296,13 @@ show_case_command (struct ui_file *file, int from_tty,
 			  "Unrecognized case-sensitive setting.");
 	}
 
-      fprintf_filtered (gdb_stdout,
+      fprintf_filtered (file,
 			_("Case sensitivity in "
 			  "name search is \"auto; currently %s\".\n"),
 			tmp);
     }
   else
-    fprintf_filtered (gdb_stdout,
+    fprintf_filtered (file,
 		      _("Case sensitivity in name search is \"%s\".\n"),
 		      value);
 
@@ -383,8 +383,8 @@ language_info ()
     return;
 
   expected_language = current_language;
-  printf_unfiltered (_("Current language:  %s\n"), language);
-  show_language_command (NULL, 1, NULL, NULL);
+  printf_filtered (_("Current language:  %s\n"), language);
+  show_language_command (gdb_stdout, 1, NULL, NULL);
 }
 
 /* This page contains functions for the printing out of
@@ -476,7 +476,8 @@ add_set_language_command ()
   /* Display "auto", "local" and "unknown" first, and then the rest,
      alpha sorted.  */
   const char **language_names_p = language_names;
-  *language_names_p++ = language_def (language_auto)->name ();
+  language = language_def (language_auto)->name ();
+  *language_names_p++ = language;
   *language_names_p++ = "local";
   *language_names_p++ = language_def (language_unknown)->name ();
   const char **sort_begin = language_names_p;
@@ -1150,6 +1151,8 @@ _initialize_language ()
   add_alias_cmd ("c", setshow_check_cmds.show, no_class, 1, &showlist);
   add_alias_cmd ("ch", setshow_check_cmds.show, no_class, 1, &showlist);
 
+  range = type_or_range_names[3];
+  gdb_assert (strcmp (range, "auto") == 0);
   add_setshow_enum_cmd ("range", class_support, type_or_range_names,
 			&range,
 			_("Set range checking (on/warn/off/auto)."),
@@ -1158,6 +1161,8 @@ _initialize_language ()
 			show_range_command,
 			&setchecklist, &showchecklist);
 
+  case_sensitive = case_sensitive_names[2];
+  gdb_assert (strcmp (case_sensitive, "auto") == 0);
   add_setshow_enum_cmd ("case-sensitive", class_support, case_sensitive_names,
 			&case_sensitive, _("\
 Set case sensitivity in name search (on/off/auto)."), _("\
@@ -1173,10 +1178,6 @@ For Fortran the default is off; for other languages the default is on."),
   current_language = language_def (language_unknown);
 
   add_set_language_command ();
-
-  language = "auto";
-  range = "auto";
-  case_sensitive = "auto";
 
   /* Have the above take effect.  */
   set_language (language_auto);

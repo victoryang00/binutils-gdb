@@ -1,5 +1,7 @@
 -*- text -*-
 
+Changes in 2.38:
+
 * elfedit: Add --output-abiversion option to update ABIVERSION.
 
 * Add support for the LoongArch instruction set.
@@ -17,6 +19,10 @@
 
 * Support for efi-app-aarch64, efi-rtdrv-aarch64 and efi-bsdrv-aarch64 has been
   added to objcopy in order to enable UEFI development using binutils.
+
+* ar: Add --thin for creating thin archives. -T is a deprecated alias without
+  diagnostics. In many ar implementations -T has a different meaning, as
+  specified by X/Open System Interface.
 
 Changes in 2.37:
 
@@ -830,7 +836,7 @@ Changes in binutils 2.1:
   and/or local symbols only.  They now also support long options.
 
 
-Copyright (C) 2012-2021 Free Software Foundation, Inc.
+Copyright (C) 2012-2022 Free Software Foundation, Inc.
 
 Copying and distribution of this file, with or without modification,
 are permitted in any medium without royalty provided the copyright

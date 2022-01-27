@@ -1,6 +1,6 @@
 /* Ada language support routines for GDB, the GNU debugger.
 
-   Copyright (C) 1992-2021 Free Software Foundation, Inc.
+   Copyright (C) 1992-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -20,7 +20,7 @@
 
 #include "defs.h"
 #include <ctype.h>
-#include "gdb_regex.h"
+#include "gdbsupport/gdb_regex.h"
 #include "frame.h"
 #include "symtab.h"
 #include "gdbtypes.h"
@@ -35,7 +35,7 @@
 #include "breakpoint.h"
 #include "gdbcore.h"
 #include "hashtab.h"
-#include "gdb_obstack.h"
+#include "gdbsupport/gdb_obstack.h"
 #include "ada-lang.h"
 #include "completer.h"
 #include "ui-out.h"
@@ -1949,6 +1949,8 @@ ada_is_unconstrained_packed_array_type (struct type *type)
       /* The structure's first field is a pointer to an array, so this
 	 fetches the array type.  */
       type = TYPE_TARGET_TYPE (type->field (0).type ());
+      if (type->code () == TYPE_CODE_TYPEDEF)
+	type = ada_typedef_target_type (type);
       /* Now we can see if the array elements are packed.  */
       return TYPE_FIELD_BITSIZE (type, 0) > 0;
     }
@@ -4184,9 +4186,7 @@ ada_convert_actual (struct value *actual, struct type *formal_type0)
 
 	      actual_type = ada_check_typedef (value_type (actual));
 	      val = allocate_value (actual_type);
-	      memcpy ((char *) value_contents_raw (val).data (),
-		      (char *) value_contents (actual).data (),
-		      TYPE_LENGTH (actual_type));
+	      copy (value_contents (actual), value_contents_raw (val));
 	      actual = ensure_lval (val);
 	    }
 	  result = value_addr (actual);
@@ -6915,7 +6915,7 @@ type_as_string (struct type *type)
 
   type_print (type, "", &tmp_stream, -1);
 
-  return std::move (tmp_stream.string ());
+  return tmp_stream.release ();
 }
 
 /* Given a type TYPE, look up the type of the component of type named NAME.
@@ -8898,7 +8898,6 @@ ada_promote_array_of_integrals (struct type *type, struct value *val)
 {
   struct type *elt_type = TYPE_TARGET_TYPE (type);
   LONGEST lo, hi;
-  struct value *res;
   LONGEST i;
 
   /* Verify that both val and type are arrays of scalars, and
@@ -8914,16 +8913,16 @@ ada_promote_array_of_integrals (struct type *type, struct value *val)
   if (!get_array_bounds (type, &lo, &hi))
     error (_("unable to determine array bounds"));
 
-  res = allocate_value (type);
+  value *res = allocate_value (type);
+  gdb::array_view<gdb_byte> res_contents = value_contents_writeable (res);
 
   /* Promote each array element.  */
   for (i = 0; i < hi - lo + 1; i++)
     {
       struct value *elt = value_cast (elt_type, value_subscript (val, lo + i));
+      int elt_len = TYPE_LENGTH (elt_type);
 
-      memcpy ((value_contents_writeable (res).data ()
-	       + (i * TYPE_LENGTH (elt_type))),
-	      value_contents_all (elt).data (), TYPE_LENGTH (elt_type));
+      copy (value_contents_all (elt), res_contents.slice (elt_len * i, elt_len));
     }
 
   return res;
@@ -12043,21 +12042,15 @@ print_recreate_exception (struct breakpoint *b, struct ui_file *fp)
   print_recreate_thread (b, fp);
 }
 
-/* Virtual tables for various breakpoint types.  */
+/* Virtual table for breakpoint type.  */
 static struct breakpoint_ops catch_exception_breakpoint_ops;
-static struct breakpoint_ops catch_exception_unhandled_breakpoint_ops;
-static struct breakpoint_ops catch_assert_breakpoint_ops;
-static struct breakpoint_ops catch_handlers_breakpoint_ops;
 
 /* See ada-lang.h.  */
 
 bool
 is_ada_exception_catchpoint (breakpoint *bp)
 {
-  return (bp->ops == &catch_exception_breakpoint_ops
-	  || bp->ops == &catch_exception_unhandled_breakpoint_ops
-	  || bp->ops == &catch_assert_breakpoint_ops
-	  || bp->ops == &catch_handlers_breakpoint_ops);
+  return bp->ops == &catch_exception_breakpoint_ops;
 }
 
 /* Split the arguments specified in a "catch exception" command.  
@@ -12167,32 +12160,6 @@ ada_exception_sym_name (enum ada_exception_catchpoint_kind ex)
     }
 }
 
-/* Return the breakpoint ops "virtual table" used for catchpoints
-   of the EX kind.  */
-
-static const struct breakpoint_ops *
-ada_exception_breakpoint_ops (enum ada_exception_catchpoint_kind ex)
-{
-  switch (ex)
-    {
-      case ada_catch_exception:
-	return (&catch_exception_breakpoint_ops);
-	break;
-      case ada_catch_exception_unhandled:
-	return (&catch_exception_unhandled_breakpoint_ops);
-	break;
-      case ada_catch_assert:
-	return (&catch_assert_breakpoint_ops);
-	break;
-      case ada_catch_handlers:
-	return (&catch_handlers_breakpoint_ops);
-	break;
-      default:
-	internal_error (__FILE__, __LINE__,
-			_("unexpected catchpoint kind (%d)"), ex);
-    }
-}
-
 /* Return the condition that will be used to match the current exception
    being raised with the exception that the user wants to catch.  This
    assumes that this condition is used when the inferior just triggered
@@ -12203,7 +12170,6 @@ static std::string
 ada_exception_catchpoint_cond_string (const char *excep_string,
 				      enum ada_exception_catchpoint_kind ex)
 {
-  int i;
   bool is_standard_exc = false;
   std::string result;
 
@@ -12236,9 +12202,9 @@ ada_exception_catchpoint_cond_string (const char *excep_string,
      breakpoint condition is to use its fully-qualified named:
      e.g. my_package.constraint_error.  */
 
-  for (i = 0; i < sizeof (standard_exc) / sizeof (char *); i++)
+  for (const char *name : standard_exc)
     {
-      if (strcmp (standard_exc [i], excep_string) == 0)
+      if (strcmp (name, excep_string) == 0)
 	{
 	  is_standard_exc = true;
 	  break;
@@ -12287,7 +12253,7 @@ ada_exception_sal (enum ada_exception_catchpoint_kind ex,
   *addr_string = sym_name;
 
   /* Set OPS.  */
-  *ops = ada_exception_breakpoint_ops (ex);
+  *ops = &catch_exception_breakpoint_ops;
 
   return find_function_start_sal (sym, 1);
 }
@@ -12468,13 +12434,11 @@ ada_is_exception_sym (struct symbol *sym)
 static int
 ada_is_non_standard_exception_sym (struct symbol *sym)
 {
-  int i;
-
   if (!ada_is_exception_sym (sym))
     return 0;
 
-  for (i = 0; i < ARRAY_SIZE (standard_exc); i++)
-    if (strcmp (sym->linkage_name (), standard_exc[i]) == 0)
+  for (const char *name : standard_exc)
+    if (strcmp (sym->linkage_name (), name) == 0)
       return 0;  /* A standard exception.  */
 
   /* Numeric_Error is also a standard exception, so exclude it.
@@ -12539,20 +12503,17 @@ static void
 ada_add_standard_exceptions (compiled_regex *preg,
 			     std::vector<ada_exc_info> *exceptions)
 {
-  int i;
-
-  for (i = 0; i < ARRAY_SIZE (standard_exc); i++)
+  for (const char *name : standard_exc)
     {
-      if (preg == NULL
-	  || preg->exec (standard_exc[i], 0, NULL, 0) == 0)
+      if (preg == NULL || preg->exec (name, 0, NULL, 0) == 0)
 	{
 	  struct bound_minimal_symbol msymbol
-	    = ada_lookup_simple_minsym (standard_exc[i]);
+	    = ada_lookup_simple_minsym (name);
 
 	  if (msymbol.minsym != NULL)
 	    {
 	      struct ada_exc_info info
-		= {standard_exc[i], BMSYMBOL_VALUE_ADDRESS (msymbol)};
+		= {name, BMSYMBOL_VALUE_ADDRESS (msymbol)};
 
 	      exceptions->push_back (info);
 	    }
@@ -13444,36 +13405,6 @@ initialize_ada_catchpoint_ops (void)
   initialize_breakpoint_ops ();
 
   ops = &catch_exception_breakpoint_ops;
-  *ops = bkpt_breakpoint_ops;
-  ops->allocate_location = allocate_location_exception;
-  ops->re_set = re_set_exception;
-  ops->check_status = check_status_exception;
-  ops->print_it = print_it_exception;
-  ops->print_one = print_one_exception;
-  ops->print_mention = print_mention_exception;
-  ops->print_recreate = print_recreate_exception;
-
-  ops = &catch_exception_unhandled_breakpoint_ops;
-  *ops = bkpt_breakpoint_ops;
-  ops->allocate_location = allocate_location_exception;
-  ops->re_set = re_set_exception;
-  ops->check_status = check_status_exception;
-  ops->print_it = print_it_exception;
-  ops->print_one = print_one_exception;
-  ops->print_mention = print_mention_exception;
-  ops->print_recreate = print_recreate_exception;
-
-  ops = &catch_assert_breakpoint_ops;
-  *ops = bkpt_breakpoint_ops;
-  ops->allocate_location = allocate_location_exception;
-  ops->re_set = re_set_exception;
-  ops->check_status = check_status_exception;
-  ops->print_it = print_it_exception;
-  ops->print_one = print_one_exception;
-  ops->print_mention = print_mention_exception;
-  ops->print_recreate = print_recreate_exception;
-
-  ops = &catch_handlers_breakpoint_ops;
   *ops = bkpt_breakpoint_ops;
   ops->allocate_location = allocate_location_exception;
   ops->re_set = re_set_exception;

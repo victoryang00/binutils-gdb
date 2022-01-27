@@ -1,3 +1,36 @@
+2022-01-24  Nick Clifton  <nickc@redhat.com>
+
+	* po/uk.po: Updated Ukranian translation.
+
+2022-01-22  Nick Clifton  <nickc@redhat.com>
+
+	* configure: Regenerate.
+	* po/gas.pot: Regenerate.
+
+2022-01-22  Nick Clifton  <nickc@redhat.com>
+
+	* 2.38 release branch created.
+
+2022-01-17  Nick Clifton  <nickc@redhat.com>
+
+	* Makefile.in: Regenerate.
+	* po/gas.pot: Regenerate.
+
+2022-01-17  Sergey Belyashov  <sergey.belyashov@gmail.com>
+
+	PR 28762
+	* app.c (do_scrub_chars): Correct handling when the symbol is not 'af'.
+
+2021-12-16  Nick Clifton  <nickc@redhat.com>
+
+	PR 28686
+	* config/tc-avr.h (tc_fix_adjustable): Define.
+	* config/tc-avr.c (avr_fix_adjustable): New function.
+	* testsuite/gas/all/gas.exp: Skip tests that need adjustable fixups.
+	* testsuite/gas/elf/elf.exp: Likewise.
+	* testsuite/gas/avr/diffreloc_withrelax.d: Adjust expected output.
+	* testsuite/gas/avr/pc-relative-reloc.d: Adjust expected output.
+
 2021-11-26  Tom de Vries  <tdevries@suse.de>
 
 	PR 28629
@@ -2566,7 +2599,7 @@
 
 For older changes see ChangeLog-2020
 
-Copyright (C) 2021 Free Software Foundation, Inc.
+Copyright (C) 2021-2022 Free Software Foundation, Inc.
 
 Copying and distribution of this file, with or without modification,
 are permitted in any medium without royalty provided the copyright

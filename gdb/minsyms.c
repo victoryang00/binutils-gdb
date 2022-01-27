@@ -1,5 +1,5 @@
 /* GDB routines for manipulating the minimal symbol tables.
-   Copyright (C) 1992-2021 Free Software Foundation, Inc.
+   Copyright (C) 1992-2022 Free Software Foundation, Inc.
    Contributed by Cygnus Support, using pieces from other GDB modules.
 
    This file is part of GDB.
@@ -1187,9 +1187,10 @@ minimal_symbol_reader::record_full (gdb::string_view name,
     return (NULL);
 
   if (symtab_create_debug >= 2)
-    printf_unfiltered ("Recording minsym:  %-21s  %18s  %4d  %.*s\n",
-	       mst_str (ms_type), hex_string (address), section,
-	       (int) name.size (), name.data ());
+    fprintf_unfiltered (gdb_stdlog,
+			"Recording minsym:  %-21s  %18s  %4d  %.*s\n",
+			mst_str (ms_type), hex_string (address), section,
+			(int) name.size (), name.data ());
 
   if (m_msym_bunch_index == BUNCH_SIZE)
     {

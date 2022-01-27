@@ -1,6 +1,6 @@
 /* Fortran language support definitions for GDB, the GNU debugger.
 
-   Copyright (C) 1992-2021 Free Software Foundation, Inc.
+   Copyright (C) 1992-2022 Free Software Foundation, Inc.
 
    Contributed by Motorola.  Adapted from the C definitions by Farooq Butt
    (fmbutt@engage.sps.mot.com).
@@ -57,6 +57,12 @@ public:
     };
     return extensions;
   }
+
+  /* See language.h.  */
+  void print_array_index (struct type *index_type,
+			  LONGEST index,
+			  struct ui_file *stream,
+			  const value_print_options *options) const override;
 
   /* See language.h.  */
   void language_arch_info (struct gdbarch *gdbarch,

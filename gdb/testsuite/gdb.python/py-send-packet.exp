@@ -1,4 +1,4 @@
-# Copyright (C) 2021 Free Software Foundation, Inc.
+# Copyright (C) 2021-2022 Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -88,7 +88,8 @@ if { ! $skip_auxv_test } {
     # Run the test, fetches the auxv data in Python and confirm it
     # matches the expected results.
     gdb_test "python run_auxv_send_packet_test(\"$reply_data\")" \
-	"auxv send packet test passed"
+	"auxv send packet test passed" \
+	"call python run_auxv_send_packet_test function"
 }
 
 set sizeof_global_var [get_valueof "/d" "sizeof(global_var)" "UNKNOWN"]

@@ -1,6 +1,6 @@
 /* Handle set and show GDB commands.
 
-   Copyright (C) 2000-2021 Free Software Foundation, Inc.
+   Copyright (C) 2000-2022 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -659,7 +659,7 @@ get_setshow_command_value_string (const setting &var)
       gdb_assert_not_reached ("bad var_type");
     }
 
-  return std::move (stb.string ());
+  return stb.release ();
 }
 
 

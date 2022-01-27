@@ -1,5 +1,5 @@
 /* interp.c -- Simulator for Motorola 68HC11/68HC12
-   Copyright (C) 1999-2021 Free Software Foundation, Inc.
+   Copyright (C) 1999-2022 Free Software Foundation, Inc.
    Written by Stephane Carrez (stcarrez@nerim.fr)
 
 This file is part of GDB, the GNU debugger.
@@ -533,7 +533,7 @@ sim_create_inferior (SIM_DESC sd, struct bfd *abfd,
 static int
 m68hc11_reg_fetch (SIM_CPU *cpu, int rn, unsigned char *memory, int length)
 {
-  uint16 val;
+  uint16_t val;
   int size = 2;
 
   switch (rn)
@@ -597,7 +597,7 @@ m68hc11_reg_fetch (SIM_CPU *cpu, int rn, unsigned char *memory, int length)
 static int
 m68hc11_reg_store (SIM_CPU *cpu, int rn, unsigned char *memory, int length)
 {
-  uint16 val;
+  uint16_t val;
 
   val = *memory++;
   if (length == 2)

@@ -1,6 +1,6 @@
 /* Tracing functionality for remote targets in custom GDB protocol
 
-   Copyright (C) 1997-2021 Free Software Foundation, Inc.
+   Copyright (C) 1997-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -58,6 +58,7 @@
 #include <algorithm>
 #include "cli/cli-style.h"
 #include "expop.h"
+#include "gdbsupport/buildargv.h"
 
 #include <unistd.h>
 
@@ -2195,8 +2196,8 @@ tfind_1 (enum trace_find_type type, int num,
 	}
       else
 	{
-	  printf_unfiltered (_("Found trace frame %d, tracepoint %d\n"),
-			     traceframe_number, tracepoint_number);
+	  printf_filtered (_("Found trace frame %d, tracepoint %d\n"),
+			   traceframe_number, tracepoint_number);
 	}
     }
   else
@@ -2204,9 +2205,9 @@ tfind_1 (enum trace_find_type type, int num,
       if (uiout->is_mi_like_p ())
 	uiout->field_string ("found", "0");
       else if (type == tfind_number && num == -1)
-	printf_unfiltered (_("No longer looking at any trace frame\n"));
+	printf_filtered (_("No longer looking at any trace frame\n"));
       else /* This case may never occur, check.  */
-	printf_unfiltered (_("No trace frame found\n"));
+	printf_filtered (_("No trace frame found\n"));
     }
 
   /* If we're in nonstop mode and getting out of looking at trace
@@ -2394,10 +2395,10 @@ tfind_line_command (const char *args, int from_tty)
 	  printf_filtered ("Line %d of \"%s\"",
 			   sal.line,
 			   symtab_to_filename_for_display (sal.symtab));
-	  wrap_here ("  ");
+	  gdb_stdout->wrap_here (2);
 	  printf_filtered (" is at address ");
 	  print_address (get_current_arch (), start_pc, gdb_stdout);
-	  wrap_here ("  ");
+	  gdb_stdout->wrap_here (2);
 	  printf_filtered (" but contains no code.\n");
 	  sal = find_pc_line (start_pc, 0);
 	  if (sal.line > 0
@@ -2566,8 +2567,8 @@ info_scope_command (const char *args_in, int from_tty)
 		  printf_filtered ("constant bytes: ");
 		  if (SYMBOL_TYPE (sym))
 		    for (j = 0; j < TYPE_LENGTH (SYMBOL_TYPE (sym)); j++)
-		      fprintf_filtered (gdb_stdout, " %02x",
-					(unsigned) SYMBOL_VALUE_BYTES (sym)[j]);
+		      printf_filtered (" %02x",
+				       (unsigned) SYMBOL_VALUE_BYTES (sym)[j]);
 		  break;
 		case LOC_STATIC:
 		  printf_filtered ("in static storage at address ");
@@ -3659,8 +3660,6 @@ print_one_static_tracepoint_marker (int count,
 {
   struct symbol *sym;
 
-  char wrap_indent[80];
-  char extra_field_indent[80];
   struct ui_out *uiout = current_uiout;
 
   symtab_and_line sal;
@@ -3681,14 +3680,13 @@ print_one_static_tracepoint_marker (int count,
 		    !tracepoints.empty () ? 'y' : 'n');
   uiout->spaces (2);
 
-  strcpy (wrap_indent, "                                   ");
-
+  int wrap_indent = 35;
   if (gdbarch_addr_bit (marker.gdbarch) <= 32)
-    strcat (wrap_indent, "           ");
+    wrap_indent += 11;
   else
-    strcat (wrap_indent, "                   ");
+    wrap_indent += 19;
 
-  strcpy (extra_field_indent, "         ");
+  const char *extra_field_indent = "         ";
 
   uiout->field_core_addr ("addr", marker.gdbarch, marker.address);
 

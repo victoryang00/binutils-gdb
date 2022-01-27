@@ -1,5 +1,5 @@
 /* Target-dependent code for the 32-bit OpenRISC 1000, for the GDB.
-   Copyright (C) 2008-2021 Free Software Foundation, Inc.
+   Copyright (C) 2008-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -1290,10 +1290,10 @@ or1k_dump_tdep (struct gdbarch *gdbarch, struct ui_file *file)
   if (NULL == tdep)
     return; /* Nothing to report */
 
-  fprintf_unfiltered (file, "or1k_dump_tdep: %d bytes per word\n",
-		      tdep->bytes_per_word);
-  fprintf_unfiltered (file, "or1k_dump_tdep: %d bytes per address\n",
-		      tdep->bytes_per_address);
+  fprintf_filtered (file, "or1k_dump_tdep: %d bytes per word\n",
+		    tdep->bytes_per_word);
+  fprintf_filtered (file, "or1k_dump_tdep: %d bytes per address\n",
+		    tdep->bytes_per_address);
 }
 
 

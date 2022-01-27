@@ -1,3 +1,78 @@
+2022-01-24  Nick Clifton  <nickc@redhat.com>
+
+	* po/bg.po: Updated Bulgarian translation.
+	* po/fr.po: Updated French translation.
+	* po/ro.po: Updated Romanian translation.
+	* po/uk.po: Updated Ukranian translation.
+
+2022-01-22  Martin Storsjö  <martin@martin.st>
+
+	* dlltool.c (main): Allow inferring tmp_prefix from the dll name
+	from a def file.
+
+2022-01-22  Nick Clifton  <nickc@redhat.com>
+
+	* configure: Regenerate.
+	* po/binutils.pot: Regenerate.
+
+2022-01-22  Nick Clifton  <nickc@redhat.com>
+
+	* 2.38 release branch created.
+
+2022-01-17  Nick Clifton  <nickc@redhat.com>
+
+	* Makefile.in: Regenerate.
+
+2022-01-11  Fangrui Song  <maskray@google.com>
+
+	PR binutils/28759
+	* ar.c (long_options): Add --thin.
+	(usage) Add --thin. Deprecate -T without diagnostics.
+	* doc/binutils.texi: Add doc.
+	* NEWS: Mention --thin.
+	* binutils/testsuite/binutils-all/ar.exp: Add tests.
+
+2022-01-11  Martin Storsjö  <martin@martin.st>
+
+	* dlltool.c (main): If a prefix has not been provided, attempt to
+	use a deterministic one based upon the dll name.
+
+2022-01-07  Pavel Mayorov  <pmayorov@cloudlinux.com>
+
+	PR 28718
+	* dwarf.c: Revert previous delta.
+	(debug_get_real_type): Reject indirect types that point to
+	indirect types.
+	(debug_get_type_name, debug_get_type_size, debug_write_type):
+	Likewise.
+
+2022-01-06  Nick Clifton  <nickc@redhat.com>
+
+	* debug.c (debug_write_type): Allow for malicious recursion via
+	indirect debug types.
+
+2022-01-04  Nick Clifton  <nickc@redhat.com>
+
+	PR 28716
+	* dwarf.c (load_build_id_debug_file): Remove spurious printf.
+
+2021-12-16  Nick Clifton  <nickc@redhat.com>
+
+	PR 28697
+	* dwarf.c (load_build_id_debug_file): New function.
+	(try_build_id_prefix): New function.
+	(check_for_and_load_links): Call load_build_id_debug_file.
+	(debug_displays): Add entry for .note.gnu.build-id.
+	* dwarf.h (enum dwarf_section_display_enum): Add
+	note_gnu_build_id.
+	* testsuite/binutils-all/debuginfod.exp (test_fetch_debuglink):
+	Fix regexp for loads via debuglink section.
+
+2021-12-03  Chenghua Xu  <xuchenghua@loongson.cn>
+
+	* MAINTAINERS: Add myself and Zhensong Liu
+	as the LoongArch maintainer.
+
 2021-12-02  Nick Clifton  <nickc@redhat.com>
 
 	PR 28645
@@ -1497,7 +1572,7 @@
 
 For older changes see ChangeLog-2020
 
-Copyright (C) 2021 Free Software Foundation, Inc.
+Copyright (C) 2021-2022 Free Software Foundation, Inc.
 
 Copying and distribution of this file, with or without modification,
 are permitted in any medium without royalty provided the copyright

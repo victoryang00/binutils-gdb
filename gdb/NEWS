@@ -3,6 +3,17 @@
 
 *** Changes since GDB 11
 
+* Configure changes
+
+--enable-threading
+
+  Enable or disable multithreaded symbol loading.  This is enabled
+  by default, but passing --disable-threading or --enable-threading=no
+  to configure will disable it.
+
+  Disabling this can cause a performance penalty when there are a lot of
+  symbols to load, but is useful for debugging purposes.
+
 * New commands
 
 maint set backtrace-on-fatal-signal on|off
@@ -45,6 +56,31 @@ set logging enabled on|off
 show logging enabled
   These commands set or show whether logging is enabled or disabled.
 
+exit
+  You can now exit GDB by using the new command "exit", in addition to
+  the existing "quit" command.
+
+set debug threads on|off
+show debug threads
+  Print additional debug messages about thread creation and deletion.
+
+set debug linux-nat on|off
+show debug linux-nat
+  These new commands replaced the old 'set debug lin-lwp' and 'show
+  debug lin-lwp' respectively.  Turning this setting on prints debug
+  messages relating to GDB's handling of native Linux inferiors.
+
+maint flush source-cache
+  Flush the contents of the source code cache.
+
+maint set gnu-source-highlight enabled on|off
+maint show gnu-source-highlight enabled
+  Whether GDB should use the GNU Source Highlight library for adding
+  styling to source code.  When off, the library will not be used, even
+  when available.  When GNU Source Highlight isn't used, or can't add
+  styling to a particular source file, then the Python Pygments
+  library will be used instead.
+
 * Changed commands
 
 maint packet
@@ -53,12 +89,28 @@ maint packet
   as escaped hex, e.g. \x?? where '??' is replaces with the value of
   the non-printable character.
 
+clone-inferior
+  The clone-inferior command now ensures that the TTY, CMD and ARGS
+  settings are copied from the original inferior to the new one.
+  All modifications to the environment variables done using the 'set
+  environment' or 'unset environment' commands are also copied to the new
+  inferior.
+
+set debug lin-lwp on|off
+show debug lin-lwp
+  These commands have been removed from GDB.  The new command 'set
+  debug linux-nat' and 'show debug linux-nat' should be used
+  instead.
+
 * Python API
 
   ** New function gdb.add_history(), which takes a gdb.Value object
      and adds the value it represents to GDB's history list.  An
      integer, the index of the new item in the history list, is
      returned.
+
+  ** New function gdb.history_count(), which returns the number of
+     values in GDB's value history.
 
   ** New gdb.events.gdb_exiting event.  This event is called with a
      gdb.GdbExitingEvent object which has the read-only attribute
@@ -93,6 +145,16 @@ maint packet
   ** New gdb.RemoteTargetConnection.send_packet(PACKET) method.  This
      is equivalent to the existing 'maint packet' CLI command; it
      allows a user specified packet to be sent to the remote target.
+
+  ** New function gdb.host_charset(), returns a string, which is the
+     name of the current host charset.
+
+  ** New gdb.set_parameter(NAME, VALUE).  This sets the gdb parameter
+     NAME to VALUE.
+
+  ** New gdb.with_parameter(NAME, VALUE).  This returns a context
+     manager that temporarily sets the gdb parameter NAME to VALUE,
+     then resets it when the context is exited.
 
 * New features in the GDB remote stub, GDBserver
 

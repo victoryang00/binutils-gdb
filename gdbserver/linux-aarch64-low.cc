@@ -1,7 +1,7 @@
 /* GNU/Linux/AArch64 specific low level interface, for the remote server for
    GDB.
 
-   Copyright (C) 2009-2021 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
    Contributed by ARM Ltd.
 
    This file is part of GDB.
@@ -2467,9 +2467,8 @@ emit_ops_insns (const uint32_t *start, int len)
 {
   CORE_ADDR buildaddr = current_insn_ptr;
 
-  if (debug_threads)
-    debug_printf ("Adding %d instrucions at %s\n",
-		  len, paddress (buildaddr));
+  threads_debug_printf ("Adding %d instrucions at %s",
+			len, paddress (buildaddr));
 
   append_insns (&buildaddr, len, start);
   current_insn_ptr = buildaddr;

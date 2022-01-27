@@ -1,6 +1,6 @@
 /* Skipping uninteresting files and functions while stepping.
 
-   Copyright (C) 2011-2021 Free Software Foundation, Inc.
+   Copyright (C) 2011-2022 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,10 +33,11 @@
 #include "source.h"
 #include "filenames.h"
 #include "fnmatch.h"
-#include "gdb_regex.h"
+#include "gdbsupport/gdb_regex.h"
 #include "gdbsupport/gdb_optional.h"
 #include <list>
 #include "cli/cli-style.h"
+#include "gdbsupport/buildargv.h"
 
 /* True if we want to print debug printouts related to file/function
    skipping. */

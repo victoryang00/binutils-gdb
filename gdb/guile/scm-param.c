@@ -1,6 +1,6 @@
 /* GDB parameters implemented in Guile.
 
-   Copyright (C) 2008-2021 Free Software Foundation, Inc.
+   Copyright (C) 2008-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -320,7 +320,7 @@ pascm_set_func (const char *args, int from_tty, struct cmd_list_element *c)
 
   /* GDB is usually silent when a parameter is set.  */
   if (*msg.get () != '\0')
-    fprintf_filtered (gdb_stdout, "%s\n", msg.get ());
+    printf_filtered ("%s\n", msg.get ());
 }
 
 /* A callback function that is registered against the respective
@@ -458,12 +458,12 @@ add_setshow_generic (enum var_types param_type, enum command_class cmd_class,
       break;
 
     case var_enum:
+      /* Initialize the value, just in case.  */
+      make_setting (self).set<const char *> (self->enumeration[0]);
       commands = add_setshow_enum_cmd (cmd_name, cmd_class, self->enumeration,
 				       &self->value.cstringval, set_doc,
 				       show_doc, help_doc, set_func, show_func,
 				       set_list, show_list);
-      /* Initialize the value, just in case.  */
-      make_setting (self).set<const char *> (self->enumeration[0]);
       break;
 
     default:

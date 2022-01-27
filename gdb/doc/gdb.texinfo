@@ -1,5 +1,5 @@
 \input texinfo      @c -*-texinfo-*-
-@c Copyright (C) 1988--2021 Free Software Foundation, Inc.
+@c Copyright (C) 1988--2022 Free Software Foundation, Inc.
 @c
 @c %**start of header
 @c makeinfo ignores cmds prev to setfilename, so its arg cannot make use
@@ -50,7 +50,7 @@
 
 @copying
 @c man begin COPYRIGHT
-Copyright @copyright{} 1988-2021 Free Software Foundation, Inc.
+Copyright @copyright{} 1988-2022 Free Software Foundation, Inc.
 
 Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or
@@ -120,7 +120,7 @@ This is the @value{EDITION} Edition, for @value{GDBN}
 @end ifset
 Version @value{GDBVN}.
 
-Copyright (C) 1988-2021 Free Software Foundation, Inc.
+Copyright (C) 1988-2022 Free Software Foundation, Inc.
 
 This edition of the GDB manual is dedicated to the memory of Fred
 Fish.  Fred was a long-standing contributor to GDB and to Free
@@ -841,7 +841,7 @@ The essentials are:
 @item
 type @samp{@value{GDBP}} to start @value{GDBN}.
 @item
-type @kbd{quit} or @kbd{Ctrl-d} to exit.
+type @kbd{quit}, @kbd{exit} or @kbd{Ctrl-d} to exit.
 @end itemize
 
 @menu
@@ -1580,14 +1580,16 @@ Options,,Choosing Modes}.
 
 @table @code
 @kindex quit @r{[}@var{expression}@r{]}
+@kindex exit @r{[}@var{expression}@r{]}
 @kindex q @r{(@code{quit})}
 @item quit @r{[}@var{expression}@r{]}
+@itemx exit @r{[}@var{expression}@r{]}
 @itemx q
 To exit @value{GDBN}, use the @code{quit} command (abbreviated
-@code{q}), or type an end-of-file character (usually @kbd{Ctrl-d}).  If you
-do not supply @var{expression}, @value{GDBN} will terminate normally;
-otherwise it will terminate using the result of @var{expression} as the
-error code.
+@code{q}), the @code{exit} command, or type an end-of-file
+character (usually @kbd{Ctrl-d}).  If you do not supply @var{expression},
+@value{GDBN} will terminate normally; otherwise it will terminate using
+the result of @var{expression} as the error code.
 @end table
 
 @cindex interrupt
@@ -3329,8 +3331,12 @@ use @code{run} to spawn a local program, etc.
 @item clone-inferior [ -copies @var{n} ] [ @var{infno} ]
 Adds @var{n} inferiors ready to execute the same program as inferior
 @var{infno}; @var{n} defaults to 1, and @var{infno} defaults to the
-number of the current inferior.  This is a convenient command when you
-want to run another instance of the inferior you are debugging.
+number of the current inferior.  This command copies the values of the
+@var{args}, @w{@var{inferior-tty}} and @var{cwd} properties from the
+current inferior to the new one.  It also propagates changes the user
+made to environment variables using the @w{@code{set environment}} and
+@w{@code{unset environment}} commands.  This is a convenient command
+when you want to run another instance of the inferior you are debugging.
 
 @smallexample
 (@value{GDBP}) info inferiors
@@ -3897,6 +3903,14 @@ Display current libthread_db search path.
 @itemx show debug libthread-db
 Turns on or off display of @code{libthread_db}-related events.
 Use @code{1} to enable, @code{0} to disable.
+
+@kindex set debug threads
+@kindex show debug threads
+@cindex debugging @code{threads}
+@item set debug threads @r{[}on@r{|}off@r{]}
+@itemx show debug threads
+When @samp{on} @value{GDBN} will print additional messages when
+threads are created and deleted.
 @end table
 
 @node Forks
@@ -27014,12 +27028,12 @@ Turn on or off debugging messages from JIT debug support.
 @item show debug jit
 Displays the current state of @value{GDBN} JIT debugging.
 
-@item set debug lin-lwp
-@cindex @sc{gnu}/Linux LWP debug messages
-@cindex Linux lightweight processes
-Turn on or off debugging messages from the Linux LWP debug support.
-@item show debug lin-lwp
-Show the current state of Linux LWP debugging messages.
+@item set debug linux-nat @r{[}on@r{|}off@r{]}
+@cindex @sc{gnu}/Linux native target debug messages
+@cindex Linux native targets
+Turn on or off debugging messages from the Linux native target debug support.
+@item show debug linux-nat
+Show the current state of Linux native target debugging messages.
 
 @item set debug linux-namespaces
 @cindex @sc{gnu}/Linux namespaces debug messages
@@ -29392,8 +29406,12 @@ find if asynchronous execution is enabled using the
 @code{-list-target-features} command.
 
 @table @code
-@item -gdb-set mi-async on
-@item -gdb-set mi-async off
+@cindex foreground execution
+@cindex background execution
+@cindex asynchronous execution
+@cindex execution, foreground, background and asynchronous
+@kindex set mi-async
+@item -gdb-set mi-async @r{[}on@r{|}off@r{]}
 Set whether MI is in asynchronous mode.
 
 When @code{off}, which is the default, MI execution commands (e.g.,
@@ -29405,6 +29423,7 @@ commands (e.g., @code{-exec-continue} becomes the equivalent of the
 @code{c&} CLI command), and so @value{GDBN} is capable of processing
 MI commands even while the target is running.
 
+@kindex show mi-async
 @item -gdb-show mi-async
 Show whether MI asynchronous mode is enabled.
 @end table
@@ -39454,6 +39473,19 @@ frame cache.  This command is useful when debugging issues related to
 register fetching, or frame unwinding.  The command @code{flushregs}
 is deprecated in favor of @code{maint flush register-cache}.
 
+@kindex maint flush source-cache
+@cindex source code, caching
+@item maint flush source-cache
+Flush @value{GDBN}'s cache of source code file contents.  After
+@value{GDBN} reads a source file, and optionally applies styling
+(@pxref{Output Styling}), the file contents are cached.  This command
+clears that cache.  The next time @value{GDBN} wants to show lines
+from a source file, the content will be re-read.
+
+This command is useful when debugging issues related to source code
+styling.  After flushing the cache any source code displayed by
+@value{GDBN} will be re-read and re-styled.
+
 @kindex maint print objfiles
 @cindex info for known object files
 @item maint print objfiles @r{[}@var{regexp}@r{]}
@@ -39764,6 +39796,25 @@ is not to perform such checks.  If any check fails @value{GDBN} will
 unload the library and continue searching for a suitable candidate as
 described in @ref{set libthread-db-search-path}.  For more information
 about the tests, see @ref{maint check libthread-db}.
+
+@kindex maint set gnu-source-highlight enabled
+@kindex maint show gnu-source-highlight enabled
+@item maint set gnu-source-highlight enabled @r{[}on|off@r{]}
+@itemx maint show gnu-source-highlight enabled
+Control whether @value{GDBN} should use the GNU Source Highlight
+library for applying styling to source code (@pxref{Output Styling}).
+This will be @samp{on} by default if the GNU Source Highlight library
+is available.  If the GNU Source Highlight library is not available,
+then this will be @samp{off} by default, and attempting to change this
+value to @samp{on} will give an error.
+
+If the GNU Source Highlight library is not being used, then
+@value{GDBN} will use the Python Pygments package for source code
+styling, if it is available.
+
+This option is useful for debugging @value{GDBN}'s use of the Pygments
+library when @value{GDBN} is linked against the GNU Source Highlight
+library.
 
 @kindex maint space
 @cindex memory used by commands
@@ -47253,7 +47304,7 @@ Modula-2.
 
 @value{GDBN} is invoked with the shell command @code{gdb}.  Once started, it reads
 commands from the terminal until you tell it to exit with the @value{GDBN}
-command @code{quit}.  You can get online help from @value{GDBN} itself
+command @code{quit} or @code{exit}.  You can get online help from @value{GDBN} itself
 by using the command @code{help}.
 
 You can run @code{gdb} with no arguments or options; but the most
@@ -47320,6 +47371,7 @@ Show information about @value{GDBN} command @var{name}, or general information
 about using @value{GDBN}.
 
 @item quit
+@itemx exit
 Exit from @value{GDBN}.
 @end table
 

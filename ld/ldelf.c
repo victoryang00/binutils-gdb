@@ -1,5 +1,5 @@
 /* ELF emulation code for targets using elf.em.
-   Copyright (C) 1991-2021 Free Software Foundation, Inc.
+   Copyright (C) 1991-2022 Free Software Foundation, Inc.
 
    This file is part of the GNU Binutils.
 
@@ -71,7 +71,26 @@ ldelf_after_parse (void)
 	einfo (_("%P: warning: -z dynamic-undefined-weak ignored\n"));
       link_info.dynamic_undefined_weak = 0;
     }
+
+  /* Disable DT_RELR if not building PIE nor shared library.  */
+  if (!bfd_link_pic (&link_info))
+    link_info.enable_dt_relr = 0;
+
+  /* Add 3 spare tags for DT_RELR, DT_RELRSZ and DT_RELRENT.  */
+  if (link_info.enable_dt_relr)
+    link_info.spare_dynamic_tags += 3;
+
   after_parse_default ();
+  if (link_info.commonpagesize > link_info.maxpagesize)
+    {
+      if (!link_info.commonpagesize_is_set)
+	link_info.commonpagesize = link_info.maxpagesize;
+      else if (!link_info.maxpagesize_is_set)
+	link_info.maxpagesize = link_info.commonpagesize;
+      else
+	einfo (_("%F%P: common page size (0x%v) > maximum page size (0x%v)\n"),
+	       link_info.commonpagesize, link_info.maxpagesize);
+    }
 }
 
 /* Handle the generation of DT_NEEDED tags.  */
@@ -1588,11 +1607,6 @@ ldelf_before_allocation (char *audit, char *depaudit,
 		  || h->root.type == bfd_link_hash_undefweak
 		  || h->root.type == bfd_link_hash_common))
 	    {
-	      const struct elf_backend_data *bed;
-	      bed = get_elf_backend_data (link_info.output_bfd);
-	      (*bed->elf_backend_hide_symbol) (&link_info, h, true);
-	      if (ELF_ST_VISIBILITY (h->other) != STV_INTERNAL)
-		h->other = (h->other & ~ELF_ST_VISIBILITY (-1)) | STV_HIDDEN;
 	      /* Don't leave the symbol undefined.  Undefined hidden
 		 symbols typically won't have dynamic relocations, but
 		 we most likely will need dynamic relocations for

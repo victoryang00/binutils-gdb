@@ -1,6 +1,6 @@
 /* The common simulator framework for GDB, the GNU Debugger.
 
-   Copyright 2002-2021 Free Software Foundation, Inc.
+   Copyright 2002-2022 Free Software Foundation, Inc.
 
    Contributed by Andrew Cagney and Red Hat.
 
@@ -22,22 +22,22 @@
 /* This must come before any other includes.  */
 #include "defs.h"
 
-#include "sim-main.h"
-#include "sim-io.h"
-#include "sim/callback.h"
-
 #include <errno.h>
 #if HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
-
+#include <stdarg.h>
+#include <stdint.h>
+#include <stdlib.h>
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
-#include <stdlib.h>
-
 #undef open
+
+#include "sim-main.h"
+#include "sim-io.h"
+#include "sim/callback.h"
 
 /* Define the rate at which the simulator should poll the host
    for a quit. */

@@ -1,6 +1,6 @@
 /* Print values for GDB, the GNU debugger.
 
-   Copyright (C) 1986-2021 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -30,7 +30,7 @@
 #include "target-float.h"
 #include "extension.h"
 #include "ada-lang.h"
-#include "gdb_obstack.h"
+#include "gdbsupport/gdb_obstack.h"
 #include "charset.h"
 #include "typeprint.h"
 #include <ctype.h>
@@ -1946,7 +1946,7 @@ value_print_array_elements (struct value *val, struct ui_file *stream,
 	  fprintf_filtered (stream, "\n");
 	  print_spaces_filtered (2 + 2 * recurse, stream);
 	}
-      wrap_here (n_spaces (2 + 2 * recurse));
+      stream->wrap_here (2 + 2 * recurse);
       maybe_print_array_index (index_type, i + low_bound,
 			       stream, options);
 

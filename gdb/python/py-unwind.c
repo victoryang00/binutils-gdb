@@ -1,6 +1,6 @@
 /* Python frame unwinder interface.
 
-   Copyright (C) 2015-2021 Free Software Foundation, Inc.
+   Copyright (C) 2015-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -20,7 +20,7 @@
 #include "defs.h"
 #include "arch-utils.h"
 #include "frame-unwind.h"
-#include "gdb_obstack.h"
+#include "gdbsupport/gdb_obstack.h"
 #include "gdbcmd.h"
 #include "language.h"
 #include "observable.h"
@@ -524,7 +524,7 @@ pyuw_sniffer (const struct frame_unwind *self, struct frame_info *this_frame,
   struct gdbarch *gdbarch = (struct gdbarch *) (self->unwind_data);
   cached_frame_info *cached_frame;
 
-  gdbpy_enter enter_py (gdbarch, current_language);
+  gdbpy_enter enter_py (gdbarch);
 
   pyuw_debug_printf ("frame=%d, sp=%s, pc=%s",
 		     frame_relative_level (this_frame),

@@ -1,6 +1,6 @@
 /* Definitions for values of C expressions, for GDB.
 
-   Copyright (C) 1986-2021 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -948,6 +948,10 @@ extern void binop_promote (const struct language_defn *language,
 
 extern struct value *access_value_history (int num);
 
+/* Return the number of items in the value history.  */
+
+extern ULONGEST value_history_count ();
+
 extern struct value *value_of_internalvar (struct gdbarch *gdbarch,
 					   struct internalvar *var);
 
@@ -1164,10 +1168,6 @@ extern struct value *find_function_in_inferior (const char *,
 						struct objfile **);
 
 extern struct value *value_allocate_space_in_inferior (int);
-
-extern struct value *value_subscripted_rvalue (struct value *array,
-					       LONGEST index,
-					       LONGEST lowerbound);
 
 /* User function handler.  */
 

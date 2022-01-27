@@ -1,6 +1,6 @@
 /* Implementation of the GDB variable objects API.
 
-   Copyright (C) 1999-2021 Free Software Foundation, Inc.
+   Copyright (C) 1999-2022 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 #include "gdbcmd.h"
 #include "block.h"
 #include "valprint.h"
-#include "gdb_regex.h"
+#include "gdbsupport/gdb_regex.h"
 
 #include "varobj.h"
 #include "gdbthread.h"
@@ -2242,7 +2242,7 @@ varobj_value_get_print_value (struct value *value,
     /* All other cases.  */
     common_val_print (value, &stb, 0, &opts, current_language);
 
-  return std::move (stb.string ());
+  return stb.release ();
 }
 
 bool

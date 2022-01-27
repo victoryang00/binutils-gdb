@@ -1,6 +1,6 @@
 /* Native-dependent code for NetBSD.
 
-   Copyright (C) 2006-2021 Free Software Foundation, Inc.
+   Copyright (C) 2006-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -132,7 +132,7 @@ nbsd_add_threads (nbsd_nat_target *target, pid_t pid)
   netbsd_nat::for_each_thread (pid, fn);
 }
 
-/* Implement the "post_startup_inferior" target_ops method.  */
+/* Implement the virtual inf_ptrace_target::post_startup_inferior method.  */
 
 void
 nbsd_nat_target::post_startup_inferior (ptid_t ptid)
@@ -247,13 +247,12 @@ nbsd_nat_target::find_memory_regions (find_memory_region_ftype func,
       size_t size = kve->kve_end - kve->kve_start;
       if (info_verbose)
 	{
-	  fprintf_filtered (gdb_stdout,
-			    "Save segment, %ld bytes at %s (%c%c%c)\n",
-			    (long) size,
-			    paddress (target_gdbarch (), kve->kve_start),
-			    kve->kve_protection & KVME_PROT_READ ? 'r' : '-',
-			    kve->kve_protection & KVME_PROT_WRITE ? 'w' : '-',
-			    kve->kve_protection & KVME_PROT_EXEC ? 'x' : '-');
+	  printf_filtered ("Save segment, %ld bytes at %s (%c%c%c)\n",
+			   (long) size,
+			   paddress (target_gdbarch (), kve->kve_start),
+			   kve->kve_protection & KVME_PROT_READ ? 'r' : '-',
+			   kve->kve_protection & KVME_PROT_WRITE ? 'w' : '-',
+			   kve->kve_protection & KVME_PROT_EXEC ? 'x' : '-');
 	}
 
       /* Invoke the callback function to create the corefile segment.
@@ -560,7 +559,7 @@ nbsd_wait (ptid_t ptid, struct target_waitstatus *ourstatus,
   if (pid == -1)
     perror_with_name (_("Child process unexpectedly missing"));
 
-  store_waitstatus (ourstatus, status);
+  *ourstatus = host_status_to_waitstatus (status);
   return pid;
 }
 

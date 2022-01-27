@@ -1,5 +1,5 @@
 /* Multi-thread control defs for remote server for GDB.
-   Copyright (C) 1993-2021 Free Software Foundation, Inc.
+   Copyright (C) 1993-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -232,5 +232,27 @@ lwpid_of (const thread_info *thread)
 {
   return thread->id.lwp ();
 }
+
+/* Switch the current thread.  */
+
+void switch_to_thread (thread_info *thread);
+
+/* Save/restore current thread.  */
+
+class scoped_restore_current_thread
+{
+public:
+  scoped_restore_current_thread ();
+  ~scoped_restore_current_thread ();
+
+  DISABLE_COPY_AND_ASSIGN (scoped_restore_current_thread);
+
+  /* Cancel restoring on scope exit.  */
+  void dont_restore () { m_dont_restore = true; }
+
+private:
+  bool m_dont_restore = false;
+  thread_info *m_thread;
+};
 
 #endif /* GDBSERVER_GDBTHREAD_H */

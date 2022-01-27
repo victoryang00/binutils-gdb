@@ -1,6 +1,6 @@
 /* Target-dependent code for Atmel AVR, for GDB.
 
-   Copyright (C) 1996-2021 Free Software Foundation, Inc.
+   Copyright (C) 1996-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -1589,9 +1589,7 @@ avr_io_reg_read_command (const char *args, int from_tty)
       return;
     }
 
-  reinitialize_more_filter ();
-
-  printf_unfiltered (_("Target has %u io registers:\n\n"), nreg);
+  printf_filtered (_("Target has %u io registers:\n\n"), nreg);
 
   /* only fetch up to 8 registers at a time to keep the buffer small */
   int step = 8;

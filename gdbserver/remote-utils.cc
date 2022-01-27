@@ -1,5 +1,5 @@
 /* Remote utility routines for the remote server for GDB.
-   Copyright (C) 1986-2021 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -144,8 +144,7 @@ handle_accept_event (int err, gdb_client_data client_data)
   struct sockaddr_storage sockaddr;
   socklen_t len = sizeof (sockaddr);
 
-  if (debug_threads)
-    debug_printf ("handling possible accept event\n");
+  threads_debug_printf ("handling possible accept event");
 
   remote_desc = accept (listen_desc, (struct sockaddr *) &sockaddr, &len);
   if (remote_desc == -1)
@@ -671,22 +670,15 @@ putpkt_binary_1 (char *buf, int cnt, int is_notif)
       if (cs.noack_mode || is_notif)
 	{
 	  /* Don't expect an ack then.  */
-	  if (remote_debug)
-	    {
-	      if (is_notif)
-		debug_printf ("putpkt (\"%s\"); [notif]\n", buf2);
-	      else
-		debug_printf ("putpkt (\"%s\"); [noack mode]\n", buf2);
-	      debug_flush ();
-	    }
+	  if (is_notif)
+	    remote_debug_printf ("putpkt (\"%s\"); [notif]", buf2);
+	  else
+	    remote_debug_printf ("putpkt (\"%s\"); [noack mode]", buf2);
+
 	  break;
 	}
 
-      if (remote_debug)
-	{
-	  debug_printf ("putpkt (\"%s\"); [looking for ack]\n", buf2);
-	  debug_flush ();
-	}
+      remote_debug_printf ("putpkt (\"%s\"); [looking for ack]", buf2);
 
       cc = readchar ();
 
@@ -696,11 +688,7 @@ putpkt_binary_1 (char *buf, int cnt, int is_notif)
 	  return -1;
 	}
 
-      if (remote_debug)
-	{
-	  debug_printf ("[received '%c' (0x%x)]\n", cc, cc);
-	  debug_flush ();
-	}
+      remote_debug_printf ("[received '%c' (0x%x)]", cc, cc);
 
       /* Check for an input interrupt while we're here.  */
       if (cc == '\003' && current_thread != NULL)
@@ -869,8 +857,7 @@ readchar (void)
 	{
 	  if (readchar_bufcnt == 0)
 	    {
-	      if (remote_debug)
-		debug_printf ("readchar: Got EOF\n");
+	      remote_debug_printf ("readchar: Got EOF");
 	    }
 	  else
 	    perror ("readchar");
@@ -951,11 +938,8 @@ getpkt (char *buf)
 
 	  if (c == '$')
 	    break;
-	  if (remote_debug)
-	    {
-	      debug_printf ("[getpkt: discarding char '%c']\n", c);
-	      debug_flush ();
-	    }
+
+	  remote_debug_printf ("[getpkt: discarding char '%c']", c);
 
 	  if (c < 0)
 	    return -1;
@@ -998,29 +982,15 @@ getpkt (char *buf)
 
   if (!cs.noack_mode)
     {
-      if (remote_debug)
-	{
-	  debug_printf ("getpkt (\"%s\");  [sending ack] \n", buf);
-	  debug_flush ();
-	}
+      remote_debug_printf ("getpkt (\"%s\");  [sending ack]", buf);
 
       if (write_prim ("+", 1) != 1)
 	return -1;
 
-      if (remote_debug)
-	{
-	  debug_printf ("[sent ack]\n");
-	  debug_flush ();
-	}
+      remote_debug_printf ("[sent ack]");
     }
   else
-    {
-      if (remote_debug)
-	{
-	  debug_printf ("getpkt (\"%s\");  [no ack sent] \n", buf);
-	  debug_flush ();
-	}
-    }
+    remote_debug_printf ("getpkt (\"%s\");  [no ack sent]", buf);
 
   /* The readchar above may have already read a '\003' out of the socket
      and moved it to the local buffer.  For example, when GDB sends
@@ -1084,9 +1054,8 @@ void
 prepare_resume_reply (char *buf, ptid_t ptid, const target_waitstatus &status)
 {
   client_state &cs = get_client_state ();
-  if (debug_threads)
-    debug_printf ("Writing resume reply for %s:%d\n",
-		  target_pid_to_str (ptid).c_str (), status.kind ());
+  threads_debug_printf ("Writing resume reply for %s:%d",
+			target_pid_to_str (ptid).c_str (), status.kind ());
 
   switch (status.kind ())
     {
@@ -1099,7 +1068,6 @@ prepare_resume_reply (char *buf, ptid_t ptid, const target_waitstatus &status)
     case TARGET_WAITKIND_SYSCALL_ENTRY:
     case TARGET_WAITKIND_SYSCALL_RETURN:
       {
-	struct thread_info *saved_thread;
 	const char **regp;
 	struct regcache *regcache;
 
@@ -1182,7 +1150,7 @@ prepare_resume_reply (char *buf, ptid_t ptid, const target_waitstatus &status)
 
 	buf += strlen (buf);
 
-	saved_thread = current_thread;
+	scoped_restore_current_thread restore_thread;
 
 	switch_to_thread (the_target, ptid);
 
@@ -1273,8 +1241,6 @@ prepare_resume_reply (char *buf, ptid_t ptid, const target_waitstatus &status)
 	    buf += strlen (buf);
 	    current_process ()->dlls_changed = false;
 	  }
-
-	current_thread = saved_thread;
       }
       break;
     case TARGET_WAITKIND_EXITED:

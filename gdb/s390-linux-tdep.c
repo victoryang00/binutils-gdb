@@ -1,6 +1,6 @@
 /* Target-dependent code for GNU/Linux on s390.
 
-   Copyright (C) 2001-2021 Free Software Foundation, Inc.
+   Copyright (C) 2001-2022 Free Software Foundation, Inc.
 
    Contributed by D.J. Barrow (djbarrow@de.ibm.com,barrow_dj@yahoo.com)
    for IBM Deutschland Entwicklung GmbH, IBM Corporation.
@@ -815,9 +815,10 @@ s390_linux_syscall_record (struct regcache *regcache, LONGEST syscall_native)
 
   if (syscall_gdb < 0)
     {
-      printf_unfiltered (_("Process record and replay target doesn't "
-			   "support syscall number %s\n"),
-			 plongest (syscall_native));
+      fprintf_unfiltered (gdb_stderr,
+			  _("Process record and replay target doesn't "
+			    "support syscall number %s\n"),
+			  plongest (syscall_native));
       return -1;
     }
 

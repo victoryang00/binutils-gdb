@@ -1,6 +1,6 @@
 /* Support for printing C++ values for GDB, the GNU debugger.
 
-   Copyright (C) 1986-2021 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -18,7 +18,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "defs.h"
-#include "gdb_obstack.h"
+#include "gdbsupport/gdb_obstack.h"
 #include "symtab.h"
 #include "gdbtypes.h"
 #include "expression.h"
@@ -222,7 +222,7 @@ cp_print_value_fields (struct value *val, struct ui_file *stream,
 	    }
 	  else
 	    {
-	      wrap_here (n_spaces (2 + 2 * recurse));
+	      stream->wrap_here (2 + 2 * recurse);
 	    }
 
 	  annotate_field_begin (type->field (i).type ());

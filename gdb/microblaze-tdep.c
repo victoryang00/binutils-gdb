@@ -1,6 +1,6 @@
 /* Target-dependent code for Xilinx MicroBlaze.
 
-   Copyright (C) 2009-2021 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -82,19 +82,10 @@ static const char * const microblaze_register_names[] =
 
 static unsigned int microblaze_debug_flag = 0;
 
-static void ATTRIBUTE_PRINTF (1, 2)
-microblaze_debug (const char *fmt, ...)
-{ 
-  if (microblaze_debug_flag)
-    {
-       va_list args;
+#define microblaze_debug(fmt, ...) \
+  debug_prefixed_printf_cond_nofunc (microblaze_debug_flag, "MICROBLAZE", \
+				     fmt, ## __VA_ARGS__)
 
-       va_start (args, fmt);
-       printf_unfiltered ("MICROBLAZE: ");
-       vprintf_unfiltered (fmt, args);
-       va_end (args);
-    }
-}
 
 /* Return the name of register REGNUM.  */
 
@@ -204,7 +195,6 @@ microblaze_analyze_prologue (struct gdbarch *gdbarch, CORE_ADDR pc,
   unsigned long insn;
   int rd, ra, rb, imm;
   enum microblaze_instr op;
-  int flags = 0;
   int save_hidden_pointer_found = 0;
   int non_stack_instruction_found = 0;
 
@@ -303,8 +293,6 @@ microblaze_analyze_prologue (struct gdbarch *gdbarch, CORE_ADDR pc,
 	{
 	  /* We have a frame pointer.  Note the register which is 
 	     acting as the frame pointer.  */
-	  flags |= MICROBLAZE_MY_FRAME_IN_FP;
-	  flags &= ~MICROBLAZE_MY_FRAME_IN_SP;
 	  cache->fp_regnum = rd;
 	  microblaze_debug ("Found a frame pointer: r%d\n", cache->fp_regnum);
 	  save_hidden_pointer_found = 0;

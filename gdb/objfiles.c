@@ -1,6 +1,6 @@
 /* GDB routines for manipulating objfiles.
 
-   Copyright (C) 1992-2021 Free Software Foundation, Inc.
+   Copyright (C) 1992-2022 Free Software Foundation, Inc.
 
    Contributed by Cygnus Support, using pieces from other GDB modules.
 
@@ -36,7 +36,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "gdb_obstack.h"
+#include "gdbsupport/gdb_obstack.h"
 #include "hashtab.h"
 
 #include "breakpoint.h"

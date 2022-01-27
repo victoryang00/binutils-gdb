@@ -1,5 +1,5 @@
 /* tc-riscv.c -- RISC-V assembler
-   Copyright (C) 2011-2021 Free Software Foundation, Inc.
+   Copyright (C) 2011-2022 Free Software Foundation, Inc.
 
    Contributed by Andrew Waterman (andrew@sifive.com).
    Based on MIPS target.
@@ -82,7 +82,7 @@ struct riscv_csr_extra
   enum riscv_spec_class define_version;
 
   /* Record the CSR is aborted/invalid from which versions.  If it isn't
-     aborted in the current version, then it should be CSR_CLASS_VDRAFT.  */
+     aborted in the current version, then it should be PRIV_SPEC_CLASS_DRAFT.  */
   enum riscv_spec_class abort_version;
 
   /* The CSR may have more than one setting.  */
@@ -104,7 +104,7 @@ struct riscv_csr_extra
 
 /* Need to sync the version with RISC-V compiler.  */
 #ifndef DEFAULT_RISCV_ISA_SPEC
-#define DEFAULT_RISCV_ISA_SPEC "2.2"
+#define DEFAULT_RISCV_ISA_SPEC "20191213"
 #endif
 
 #ifndef DEFAULT_RISCV_PRIV_SPEC
@@ -1104,7 +1104,7 @@ validate_riscv_insn (const struct riscv_opcode *opc, int length)
 	    default:
 	      goto unknown_validate_operand;
 	    }
-	  break;
+	  break;  /* end RVC */
 	case 'V': /* RVV */
 	  switch (*++oparg)
 	    {
@@ -1128,7 +1128,7 @@ validate_riscv_insn (const struct riscv_opcode *opc, int length)
 	    default:
 	      goto unknown_validate_operand;
 	    }
-	  break;
+	  break; /* end RVV */
 	case ',': break;
 	case '(': break;
 	case ')': break;
@@ -2605,7 +2605,7 @@ riscv_ip (char *str, struct riscv_cl_insn *ip, expressionS *imm_expr,
 		default:
 		  goto unknown_riscv_ip_operand;
 		}
-	      break;
+	      break; /* end RVC */
 
 	    case 'V': /* RVV */
 	      switch (*++oparg)
@@ -2771,7 +2771,7 @@ riscv_ip (char *str, struct riscv_cl_insn *ip, expressionS *imm_expr,
 		default:
 		  goto unknown_riscv_ip_operand;
 		}
-	      break;
+	      break; /* end RVV */
 
 	    case ',':
 	      ++argnum;
@@ -3913,6 +3913,12 @@ riscv_frag_align_code (int n)
 
   riscv_mapping_state (MAP_INSN, worst_case_bytes);
 
+  /* We need to start a new frag after the alignment which may be removed by
+     the linker, to prevent the assembler from computing static offsets.
+     This is necessary to get correct EH info.  */
+  frag_wane (frag_now);
+  frag_new (0);
+
   return true;
 }
 
@@ -4167,7 +4173,7 @@ RISC-V options:\n\
   -fno-pic                    don't generate position-independent code (default)\n\
   -march=ISA                  set the RISC-V architecture\n\
   -misa-spec=ISAspec          set the RISC-V ISA spec (2.2, 20190608, 20191213)\n\
-  -mpriv-spec=PRIVspec        set the RISC-V privilege spec (1.9.1, 1.10, 1.11)\n\
+  -mpriv-spec=PRIVspec        set the RISC-V privilege spec (1.9.1, 1.10, 1.11, 1.12)\n\
   -mabi=ABI                   set the RISC-V ABI\n\
   -mrelax                     enable relax (default)\n\
   -mno-relax                  disable relax\n\

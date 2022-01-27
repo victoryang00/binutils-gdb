@@ -1,6 +1,6 @@
 /* Python interface to inferiors.
 
-   Copyright (C) 2009-2021 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -161,7 +161,7 @@ connpy_connection_removed (process_stratum_target *target)
   if (!gdb_python_initialized)
     return;
 
-  gdbpy_enter enter_py (get_current_arch (), current_language);
+  gdbpy_enter enter_py;
 
   if (!evregpy_no_listeners_p (gdb_py_events.connection_removed))
     if (emit_connection_event (target, gdb_py_events.connection_removed) < 0)

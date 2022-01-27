@@ -1,6 +1,6 @@
 /* GDB routines for supporting auto-loaded scripts.
 
-   Copyright (C) 2012-2021 Free Software Foundation, Inc.
+   Copyright (C) 2012-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -21,7 +21,7 @@
 #include <ctype.h>
 #include "auto-load.h"
 #include "progspace.h"
-#include "gdb_regex.h"
+#include "gdbsupport/gdb_regex.h"
 #include "ui-out.h"
 #include "filenames.h"
 #include "command.h"

@@ -1,6 +1,6 @@
 /* C language support routines for GDB, the GNU debugger.
 
-   Copyright (C) 1992-2021 Free Software Foundation, Inc.
+   Copyright (C) 1992-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -32,7 +32,7 @@
 #include "demangle.h"
 #include "cp-abi.h"
 #include "cp-support.h"
-#include "gdb_obstack.h"
+#include "gdbsupport/gdb_obstack.h"
 #include <ctype.h>
 #include "gdbcore.h"
 #include "gdbarch.h"

@@ -1,6 +1,6 @@
 /* tc-aarch64.c -- Assemble for the AArch64 ISA
 
-   Copyright (C) 2009-2021 Free Software Foundation, Inc.
+   Copyright (C) 2009-2022 Free Software Foundation, Inc.
    Contributed by ARM Ltd.
 
    This file is part of GAS.
@@ -9872,6 +9872,9 @@ static const struct aarch64_arch_option_table aarch64_archs[] = {
   {"armv8.8-a", AARCH64_ARCH_V8_8},
   {"armv8-r",	AARCH64_ARCH_V8_R},
   {"armv9-a",	AARCH64_ARCH_V9},
+  {"armv9.1-a",	AARCH64_ARCH_V9_1},
+  {"armv9.2-a",	AARCH64_ARCH_V9_2},
+  {"armv9.3-a",	AARCH64_ARCH_V9_3},
   {NULL, AARCH64_ARCH_NONE}
 };
 

@@ -1,6 +1,6 @@
 /* Support for printing Pascal values for GDB, the GNU debugger.
 
-   Copyright (C) 2000-2021 Free Software Foundation, Inc.
+   Copyright (C) 2000-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -20,7 +20,7 @@
 /* This file is derived from c-valprint.c */
 
 #include "defs.h"
-#include "gdb_obstack.h"
+#include "gdbsupport/gdb_obstack.h"
 #include "symtab.h"
 #include "gdbtypes.h"
 #include "expression.h"
@@ -574,7 +574,7 @@ pascal_object_print_value_fields (struct value *val, struct ui_file *stream,
 	    }
 	  else
 	    {
-	      wrap_here (n_spaces (2 + 2 * recurse));
+	      stream->wrap_here (2 + 2 * recurse);
 	    }
 
 	  annotate_field_begin (type->field (i).type ());

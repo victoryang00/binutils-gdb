@@ -1,6 +1,6 @@
 /* ELF executable support for BFD.
 
-   Copyright (C) 1993-2021 Free Software Foundation, Inc.
+   Copyright (C) 1993-2022 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -2359,16 +2359,22 @@ bfd_section_from_shdr (bfd *abfd, unsigned int shindex)
 
     case SHT_REL:
     case SHT_RELA:
+    case SHT_RELR:
       /* *These* do a lot of work -- but build no sections!  */
       {
 	asection *target_sect;
 	Elf_Internal_Shdr *hdr2, **p_hdr;
 	unsigned int num_sec = elf_numsections (abfd);
 	struct bfd_elf_section_data *esdt;
+	bfd_size_type size;
 
-	if (hdr->sh_entsize
-	    != (bfd_size_type) (hdr->sh_type == SHT_REL
-				? bed->s->sizeof_rel : bed->s->sizeof_rela))
+	if (hdr->sh_type == SHT_REL)
+	  size = bed->s->sizeof_rel;
+	else if (hdr->sh_type == SHT_RELA)
+	  size = bed->s->sizeof_rela;
+	else
+	  size = bed->s->arch_size / 8;
+	if (hdr->sh_entsize != size)
 	  goto fail;
 
 	/* Check for a bogus link to avoid crashing.  */
@@ -2381,40 +2387,6 @@ bfd_section_from_shdr (bfd *abfd, unsigned int shindex)
 	    ret = _bfd_elf_make_section_from_shdr (abfd, hdr, name,
 						   shindex);
 	    goto success;
-	  }
-
-	/* For some incomprehensible reason Oracle distributes
-	   libraries for Solaris in which some of the objects have
-	   bogus sh_link fields.  It would be nice if we could just
-	   reject them, but, unfortunately, some people need to use
-	   them.  We scan through the section headers; if we find only
-	   one suitable symbol table, we clobber the sh_link to point
-	   to it.  I hope this doesn't break anything.
-
-	   Don't do it on executable nor shared library.  */
-	if ((abfd->flags & (DYNAMIC | EXEC_P)) == 0
-	    && elf_elfsections (abfd)[hdr->sh_link]->sh_type != SHT_SYMTAB
-	    && elf_elfsections (abfd)[hdr->sh_link]->sh_type != SHT_DYNSYM)
-	  {
-	    unsigned int scan;
-	    int found;
-
-	    found = 0;
-	    for (scan = 1; scan < num_sec; scan++)
-	      {
-		if (elf_elfsections (abfd)[scan]->sh_type == SHT_SYMTAB
-		    || elf_elfsections (abfd)[scan]->sh_type == SHT_DYNSYM)
-		  {
-		    if (found != 0)
-		      {
-			found = 0;
-			break;
-		      }
-		    found = scan;
-		  }
-	      }
-	    if (found != 0)
-	      hdr->sh_link = found;
 	  }
 
 	/* Get the symbol table.  */
@@ -2742,6 +2714,7 @@ static const struct bfd_elf_special_section special_sections_r[] =
 {
   { STRING_COMMA_LEN (".rodata"), -2, SHT_PROGBITS, SHF_ALLOC },
   { STRING_COMMA_LEN (".rodata1"), 0, SHT_PROGBITS, SHF_ALLOC },
+  { STRING_COMMA_LEN (".relr.dyn"), 0, SHT_RELR, SHF_ALLOC },
   { STRING_COMMA_LEN (".rela"),	  -1, SHT_RELA,	    0 },
   { STRING_COMMA_LEN (".rel"),	  -1, SHT_REL,	    0 },
   { NULL,		    0,	   0, 0,	    0 }
@@ -3529,7 +3502,8 @@ bfd_elf_set_group_contents (bfd *abfd, asection *sec, void *failedptrarg)
 	  /* If called from the assembler, swap_out_syms will have set up
 	     elf_section_syms.
 	     PR 25699: A corrupt input file could contain bogus group info.  */
-	  if (elf_section_syms (abfd) == NULL)
+	  if (sec->index >= elf_num_section_syms (abfd)
+	      || elf_section_syms (abfd)[sec->index] == NULL)
 	    {
 	      *failedptr = true;
 	      return;
@@ -3773,9 +3747,9 @@ assign_section_numbers (bfd *abfd, struct bfd_link_info *link_info)
     }
 
   need_symtab = (bfd_get_symcount (abfd) > 0
-		|| (link_info == NULL
-		    && ((abfd->flags & (EXEC_P | DYNAMIC | HAS_RELOC))
-			== HAS_RELOC)));
+		 || (link_info == NULL
+		     && ((abfd->flags & (EXEC_P | DYNAMIC | HAS_RELOC))
+			 == HAS_RELOC)));
   if (need_symtab)
     {
       elf_onesymtab (abfd) = section_number++;
@@ -3929,11 +3903,17 @@ assign_section_numbers (bfd *abfd, struct bfd_link_info *link_info)
 	     section.  sh_link is the section index of the symbol
 	     table.  sh_info is the section index of the section to
 	     which the relocation entries apply.  We assume that an
-	     allocated reloc section uses the dynamic symbol table.
-	     FIXME: How can we be sure?  */
-	  s = bfd_get_section_by_name (abfd, ".dynsym");
-	  if (s != NULL)
-	    d->this_hdr.sh_link = elf_section_data (s)->this_idx;
+	     allocated reloc section uses the dynamic symbol table
+	     if there is one.  Otherwise we guess the normal symbol
+	     table.  FIXME: How can we be sure?  */
+	  if (d->this_hdr.sh_link == 0 && (sec->flags & SEC_ALLOC) != 0)
+	    {
+	      s = bfd_get_section_by_name (abfd, ".dynsym");
+	      if (s != NULL)
+		d->this_hdr.sh_link = elf_section_data (s)->this_idx;
+	    }
+	  if (d->this_hdr.sh_link == 0)
+	    d->this_hdr.sh_link = elf_onesymtab (abfd);
 
 	  s = elf_get_reloc_section (sec);
 	  if (s != NULL)
@@ -3988,8 +3968,8 @@ assign_section_numbers (bfd *abfd, struct bfd_link_info *link_info)
 	  /* sh_link is the section header index of the prelink library
 	     list used for the dynamic entries, or the symbol table, or
 	     the version strings.  */
-	  s = bfd_get_section_by_name (abfd, (sec->flags & SEC_ALLOC)
-					     ? ".dynstr" : ".gnu.libstr");
+	  s = bfd_get_section_by_name (abfd, ((sec->flags & SEC_ALLOC)
+					      ? ".dynstr" : ".gnu.libstr"));
 	  if (s != NULL)
 	    d->this_hdr.sh_link = elf_section_data (s)->this_idx;
 	  break;
@@ -4629,10 +4609,13 @@ elf_modify_segment_map (bfd *abfd,
 #define IS_TBSS(s) \
   ((s->flags & (SEC_THREAD_LOCAL | SEC_LOAD)) == SEC_THREAD_LOCAL)
 
-/* Set up a mapping from BFD sections to program segments.  */
+/* Set up a mapping from BFD sections to program segments.  Update
+   NEED_LAYOUT if the section layout is changed.  */
 
 bool
-_bfd_elf_map_sections_to_segments (bfd *abfd, struct bfd_link_info *info)
+_bfd_elf_map_sections_to_segments (bfd *abfd,
+				   struct bfd_link_info *info,
+				   bool *need_layout)
 {
   unsigned int count;
   struct elf_segment_map *m;
@@ -4643,7 +4626,17 @@ _bfd_elf_map_sections_to_segments (bfd *abfd, struct bfd_link_info *info)
   no_user_phdrs = elf_seg_map (abfd) == NULL;
 
   if (info != NULL)
-    info->user_phdrs = !no_user_phdrs;
+    {
+      info->user_phdrs = !no_user_phdrs;
+
+      /* Size the relative relocations if DT_RELR is enabled.  */
+      if (info->enable_dt_relr
+	  && need_layout != NULL
+	  && bed->size_relative_relocs
+	  && !bed->size_relative_relocs (info, need_layout))
+	info->callbacks->einfo
+	  (_("%F%P: failed to size relative relocations\n"));
+    }
 
   if (no_user_phdrs && bfd_count_sections (abfd) != 0)
     {
@@ -5428,13 +5421,15 @@ assign_file_positions_for_load_sections (bfd *abfd,
   Elf_Internal_Phdr *p;
   file_ptr off;  /* Octets.  */
   bfd_size_type maxpagesize;
+  bfd_size_type p_align;
+  bool p_align_p = false;
   unsigned int alloc, actual;
   unsigned int i, j;
   struct elf_segment_map **sorted_seg_map;
   unsigned int opb = bfd_octets_per_byte (abfd, NULL);
 
   if (link_info == NULL
-      && !_bfd_elf_map_sections_to_segments (abfd, link_info))
+      && !_bfd_elf_map_sections_to_segments (abfd, link_info, NULL))
     return false;
 
   alloc = 0;
@@ -5512,6 +5507,7 @@ assign_file_positions_for_load_sections (bfd *abfd,
     qsort (sorted_seg_map, alloc, sizeof (*sorted_seg_map),
 	   elf_sort_segments);
 
+  p_align = bed->p_align;
   maxpagesize = 1;
   if ((abfd->flags & D_PAGED) != 0)
     {
@@ -5582,6 +5578,15 @@ assign_file_positions_for_load_sections (bfd *abfd,
 	     segment.  */
 	  if (m->p_align_valid)
 	    maxpagesize = m->p_align;
+	  else if (p_align != 0
+		   && (link_info == NULL
+		       || !link_info->maxpagesize_is_set))
+	    /* Set p_align to the default p_align value while laying
+	       out segments aligning to the maximum page size or the
+	       largest section alignment.  The run-time loader can
+	       align segments to the default p_align value or the
+	       maximum page size, depending on system page size.  */
+	    p_align_p = true;
 
 	  p->p_align = maxpagesize;
 	}
@@ -5619,7 +5624,22 @@ assign_file_positions_for_load_sections (bfd *abfd,
 		}
 	      align = (bfd_size_type) 1 << align_power;
 	      if (align < maxpagesize)
-		align = maxpagesize;
+		{
+		  /* If a section requires alignment higher than the
+		     default p_align value, don't set p_align to the
+		     default p_align value.  */
+		  if (align > p_align)
+		    p_align_p = false;
+		  align = maxpagesize;
+		}
+	      else
+		{
+		  /* If a section requires alignment higher than the
+		     maximum page size, set p_align to the section
+		     alignment.  */
+		  p_align_p = true;
+		  p_align = align;
+		}
 	    }
 
 	  for (i = 0; i < m->count; i++)
@@ -5998,6 +6018,9 @@ assign_file_positions_for_load_sections (bfd *abfd,
 		  print_segment_map (m);
 		}
 	    }
+
+	  if (p_align_p)
+	    p->p_align = p_align;
 	}
     }
 
@@ -6310,8 +6333,7 @@ assign_file_positions_for_non_load_sections (bfd *abfd,
 		  Elf_Internal_Shdr *hdr = &elf_section_data (sect)->this_hdr;
 		  if (hdr->sh_type != SHT_NOBITS)
 		    {
-		      p->p_filesz = (sect->filepos - m->sections[0]->filepos
-				     + hdr->sh_size);
+		      p->p_filesz = sect->filepos - p->p_offset + hdr->sh_size;
 		      /* NB: p_memsz of the loadable PT_NOTE segment
 			 should be the same as p_filesz.  */
 		      if (p->p_type == PT_NOTE
@@ -6786,15 +6808,14 @@ _bfd_elf_symbol_from_bfd_symbol (bfd *abfd, asymbol **asym_ptr_ptr)
       && asym_ptr->section)
     {
       asection *sec;
-      int indx;
 
       sec = asym_ptr->section;
       if (sec->owner != abfd && sec->output_section != NULL)
 	sec = sec->output_section;
       if (sec->owner == abfd
-	  && (indx = sec->index) < elf_num_section_syms (abfd)
-	  && elf_section_syms (abfd)[indx] != NULL)
-	asym_ptr->udata.i = elf_section_syms (abfd)[indx]->udata.i;
+	  && sec->index < elf_num_section_syms (abfd)
+	  && elf_section_syms (abfd)[sec->index] != NULL)
+	asym_ptr->udata.i = elf_section_syms (abfd)[sec->index]->udata.i;
     }
 
   idx = asym_ptr->udata.i;
@@ -7507,6 +7528,40 @@ rewrite_elf_program_header (bfd *ibfd, bfd *obfd, bfd_vma maxpagesize)
   return true;
 }
 
+/* Return true if p_align in the ELF program header in ABFD is valid.  */
+
+static bool
+elf_is_p_align_valid (bfd *abfd)
+{
+  unsigned int i;
+  Elf_Internal_Phdr *segment;
+  unsigned int num_segments;
+  const struct elf_backend_data *bed = get_elf_backend_data (abfd);
+  bfd_size_type maxpagesize = bed->maxpagesize;
+  bfd_size_type p_align = bed->p_align;
+
+  /* Return true if the default p_align value isn't set or the maximum
+     page size is the same as the minimum page size.  */
+  if (p_align == 0 || maxpagesize == bed->minpagesize)
+    return true;
+
+  /* When the default p_align value is set, p_align may be set to the
+     default p_align value while segments are aligned to the maximum
+     page size.  In this case, the input p_align will be ignored and
+     the maximum page size will be used to align the output segments.  */
+  segment = elf_tdata (abfd)->phdr;
+  num_segments = elf_elfheader (abfd)->e_phnum;
+  for (i = 0; i < num_segments; i++, segment++)
+    if (segment->p_type == PT_LOAD
+	&& (segment->p_align != p_align
+	    || vma_page_aligned_bias (segment->p_vaddr,
+				      segment->p_offset,
+				      maxpagesize) != 0))
+      return true;
+
+  return false;
+}
+
 /* Copy ELF program header information.  */
 
 static bool
@@ -7521,6 +7576,7 @@ copy_elf_program_header (bfd *ibfd, bfd *obfd)
   unsigned int num_segments;
   bool phdr_included = false;
   bool p_paddr_valid;
+  bool p_palign_valid;
   unsigned int opb = bfd_octets_per_byte (ibfd, NULL);
 
   iehdr = elf_elfheader (ibfd);
@@ -7540,6 +7596,8 @@ copy_elf_program_header (bfd *ibfd, bfd *obfd)
 	p_paddr_valid = true;
 	break;
       }
+
+  p_palign_valid = elf_is_p_align_valid (ibfd);
 
   for (i = 0, segment = elf_tdata (ibfd)->phdr;
        i < num_segments;
@@ -7583,7 +7641,7 @@ copy_elf_program_header (bfd *ibfd, bfd *obfd)
       map->p_paddr = segment->p_paddr;
       map->p_paddr_valid = p_paddr_valid;
       map->p_align = segment->p_align;
-      map->p_align_valid = 1;
+      map->p_align_valid = p_palign_valid;
       map->p_vaddr_offset = 0;
 
       if (map->p_type == PT_GNU_RELRO

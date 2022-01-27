@@ -1,5 +1,5 @@
 /* tc-riscv.h -- header file for tc-riscv.c.
-   Copyright (C) 2011-2021 Free Software Foundation, Inc.
+   Copyright (C) 2011-2022 Free Software Foundation, Inc.
 
    Contributed by Andrew Waterman (andrew@sifive.com).
    Based on MIPS target.
@@ -78,6 +78,7 @@ extern int riscv_parse_long_option (const char *);
 
 #define md_pre_output_hook riscv_pre_output_hook ()
 extern void riscv_pre_output_hook (void);
+#define GAS_SORT_RELOCS 1
 
 /* Let the linker resolve all the relocs due to relaxation.  */
 #define tc_fix_adjustable(fixp) 0

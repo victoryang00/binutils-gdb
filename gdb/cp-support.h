@@ -1,5 +1,5 @@
 /* Helper routines for C++ support in GDB.
-   Copyright (C) 2002-2021 Free Software Foundation, Inc.
+   Copyright (C) 2002-2022 Free Software Foundation, Inc.
 
    Contributed by MontaVista Software.
    Namespace support contributed by David Carlton.
@@ -26,7 +26,7 @@
 
 #include "symtab.h"
 #include "gdbsupport/gdb_vecs.h"
-#include "gdb_obstack.h"
+#include "gdbsupport/gdb_obstack.h"
 #include "gdbsupport/array-view.h"
 #include <vector>
 

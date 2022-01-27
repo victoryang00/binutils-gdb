@@ -1,5 +1,5 @@
 /* CRIS base simulator support code
-   Copyright (C) 2004-2021 Free Software Foundation, Inc.
+   Copyright (C) 2004-2022 Free Software Foundation, Inc.
    Contributed by Axis Communications.
 
 This file is part of the GNU simulators.
@@ -123,7 +123,7 @@ MY (f_model_insn_before) (SIM_CPU *current_cpu, int first_p ATTRIBUTE_UNUSED)
   {
     int i;
     char flags[7];
-    unsigned64 cycle_count;
+    uint64_t cycle_count;
 
     SIM_DESC sd = CPU_STATE (current_cpu);
 

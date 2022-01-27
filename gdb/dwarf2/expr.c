@@ -1,6 +1,6 @@
 /* DWARF 2 Expression Evaluator.
 
-   Copyright (C) 2001-2021 Free Software Foundation, Inc.
+   Copyright (C) 2001-2022 Free Software Foundation, Inc.
 
    Contributed by Daniel Berlin (dan@dberlin.org)
 
@@ -577,8 +577,7 @@ indirect_pieced_value (value *value)
      encode address spaces and other things in CORE_ADDR.  */
   bfd_endian byte_order = gdbarch_byte_order (get_frame_arch (frame));
   LONGEST byte_offset
-    = extract_signed_integer (value_contents (value).data (),
-			      TYPE_LENGTH (type), byte_order);
+    = extract_signed_integer (value_contents (value), byte_order);
   byte_offset += piece->v.ptr.offset;
 
   return indirect_synthetic_pointer (piece->v.ptr.die_sect_off,
@@ -1037,8 +1036,8 @@ dwarf_expr_context::fetch_result (struct type *type, struct type *subobj_type,
 	    if (gdbarch_byte_order (arch) == BFD_ENDIAN_BIG)
 	      subobj_offset += n - max;
 
-	    memcpy (value_contents_raw (retval).data (),
-		    value_contents_all (val).data () + subobj_offset, len);
+	    copy (value_contents_all (val).slice (subobj_offset, len),
+		  value_contents_raw (retval));
 	  }
 	  break;
 
@@ -1157,9 +1156,7 @@ dwarf_expr_context::fetch_address (int n)
   ULONGEST result;
 
   dwarf_require_integral (value_type (result_val));
-  result = extract_unsigned_integer (value_contents (result_val).data (),
-				     TYPE_LENGTH (value_type (result_val)),
-				     byte_order);
+  result = extract_unsigned_integer (value_contents (result_val), byte_order);
 
   /* For most architectures, calling extract_unsigned_integer() alone
      is sufficient for extracting an address.  However, some

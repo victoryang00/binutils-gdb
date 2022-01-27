@@ -1,5 +1,5 @@
 /* Support for printing C and C++ types for GDB, the GNU debugger.
-   Copyright (C) 1986-2021 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -17,7 +17,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "defs.h"
-#include "gdb_obstack.h"
+#include "gdbsupport/gdb_obstack.h"
 #include "bfd.h"		/* Binary File Description.  */
 #include "symtab.h"
 #include "gdbtypes.h"
@@ -250,7 +250,7 @@ cp_type_print_derivation_info (struct ui_file *stream,
 
   for (i = 0; i < TYPE_N_BASECLASSES (type); i++)
     {
-      wrap_here ("        ");
+      stream->wrap_here (8);
       fputs_filtered (i == 0 ? ": " : ", ", stream);
       fprintf_filtered (stream, "%s%s ",
 			BASETYPE_VIA_PUBLIC (type, i)
@@ -310,7 +310,7 @@ cp_type_print_method_args (struct type *mtype, const char *prefix,
 	  else if (i < nargs)
 	    {
 	      fprintf_filtered (stream, ", ");
-	      wrap_here ("        ");
+	      stream->wrap_here (8);
 	    }
 	}
     }
@@ -573,7 +573,7 @@ c_type_print_args (struct type *type, struct ui_file *stream,
       if (printed_any)
 	{
 	  fprintf_filtered (stream, ", ");
-	  wrap_here ("    ");
+	  stream->wrap_here (4);
 	}
 
       param_type = type->field (i).type ();
@@ -602,7 +602,7 @@ c_type_print_args (struct type *type, struct ui_file *stream,
       if (printed_any && type->has_varargs ())
 	{
 	  fprintf_filtered (stream, ", ");
-	  wrap_here ("    ");
+	  stream->wrap_here (4);
 	  fprintf_filtered (stream, "...");
 	}
     }
@@ -888,14 +888,14 @@ c_type_print_template_args (const struct type_print_options *flags,
 
       if (first)
 	{
-	  wrap_here ("    ");
+	  stream->wrap_here (4);
 	  fprintf_filtered (stream, _("[with %s = "), sym->linkage_name ());
 	  first = 0;
 	}
       else
 	{
 	  fputs_filtered (", ", stream);
-	  wrap_here ("         ");
+	  stream->wrap_here (9);
 	  fprintf_filtered (stream, "%s = ", sym->linkage_name ());
 	}
 
@@ -1559,7 +1559,7 @@ c_type_print_base_1 (struct type *type, struct ui_file *stream,
 	    fputs_filtered (" ", stream);
 	}
 
-      wrap_here ("    ");
+      stream->wrap_here (4);
       if (show < 0)
 	{
 	  /* If we just printed a tag name, no need to print anything
@@ -1594,7 +1594,7 @@ c_type_print_base_1 (struct type *type, struct ui_file *stream,
 	      QUIT;
 	      if (i)
 		fprintf_filtered (stream, ", ");
-	      wrap_here ("    ");
+	      stream->wrap_here (4);
 	      fputs_styled (type->field (i).name (),
 			    variable_name_style.style (), stream);
 	      if (lastval != type->field (i).loc_enumval ())

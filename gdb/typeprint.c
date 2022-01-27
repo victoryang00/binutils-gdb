@@ -1,6 +1,6 @@
 /* Language independent support for printing types for GDB, the GNU debugger.
 
-   Copyright (C) 1986-2021 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -18,7 +18,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "defs.h"
-#include "gdb_obstack.h"
+#include "gdbsupport/gdb_obstack.h"
 #include "bfd.h"		/* Binary File Description */
 #include "symtab.h"
 #include "gdbtypes.h"
@@ -406,7 +406,7 @@ type_to_string (struct type *type)
       string_file stb;
 
       type_print (type, "", &stb, -1);
-      return std::move (stb.string ());
+      return stb.release ();
     }
   catch (const gdb_exception &except)
     {
@@ -554,7 +554,7 @@ whatis_exp (const char *exp, int show)
   if (flags.print_offsets
       && (type->code () == TYPE_CODE_STRUCT
 	  || type->code () == TYPE_CODE_UNION))
-    fprintf_filtered (gdb_stdout, "/* offset      |    size */  ");
+    printf_filtered ("/* offset      |    size */  ");
 
   printf_filtered ("type = ");
 

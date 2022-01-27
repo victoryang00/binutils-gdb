@@ -1,6 +1,6 @@
 /* Base/prototype target for default child (native) targets.
 
-   Copyright (C) 1988-2021 Free Software Foundation, Inc.
+   Copyright (C) 1988-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -51,18 +51,19 @@ inf_child_target::info () const
   return inf_child_target_info;
 }
 
-/* Helper function for child_wait and the derivatives of child_wait.
-   HOSTSTATUS is the waitstatus from wait() or the equivalent; store our
-   translation of that in OURSTATUS.  */
-void
-store_waitstatus (struct target_waitstatus *ourstatus, int hoststatus)
+/* See inf-child.h.  */
+
+target_waitstatus
+host_status_to_waitstatus (int hoststatus)
 {
   if (WIFEXITED (hoststatus))
-    ourstatus->set_exited (WEXITSTATUS (hoststatus));
+    return target_waitstatus ().set_exited (WEXITSTATUS (hoststatus));
   else if (!WIFSTOPPED (hoststatus))
-    ourstatus->set_signalled (gdb_signal_from_host (WTERMSIG (hoststatus)));
+    return target_waitstatus ().set_signalled
+      (gdb_signal_from_host (WTERMSIG (hoststatus)));
   else
-    ourstatus->set_stopped (gdb_signal_from_host (WSTOPSIG (hoststatus)));
+    return target_waitstatus ().set_stopped
+      (gdb_signal_from_host (WSTOPSIG (hoststatus)));
 }
 
 inf_child_target::~inf_child_target ()
@@ -199,13 +200,6 @@ inf_child_target::maybe_unpush_target ()
 {
   if (!inf_child_explicitly_opened)
     current_inferior ()->unpush_target (this);
-}
-
-void
-inf_child_target::post_startup_inferior (ptid_t ptid)
-{
-  /* This target doesn't require a meaningful "post startup inferior"
-     operation by a debugger.  */
 }
 
 bool

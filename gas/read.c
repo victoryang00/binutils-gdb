@@ -1,5 +1,5 @@
 /* read.c - read a source file -
-   Copyright (C) 1986-2021 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -5642,7 +5642,7 @@ next_char_of_string (void)
 	case '8':
 	case '9':
 	  {
-	    long number;
+	    unsigned number;
 	    int i;
 
 	    for (i = 0, number = 0;
@@ -5660,7 +5660,7 @@ next_char_of_string (void)
 	case 'x':
 	case 'X':
 	  {
-	    long number;
+	    unsigned number;
 
 	    number = 0;
 	    c = *input_line_pointer++;

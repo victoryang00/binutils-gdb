@@ -1,5 +1,5 @@
 /* debuginfod utilities for GDB.
-   Copyright (C) 2020-2021 Free Software Foundation, Inc.
+   Copyright (C) 2020-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -299,8 +299,9 @@ static void
 show_debuginfod_enabled (ui_file *file, int from_tty, cmd_list_element *cmd,
 			 const char *value)
 {
-  printf_unfiltered (_("Debuginfod functionality is currently set to "
-		       "\"%s\".\n"), debuginfod_enabled);
+  fprintf_filtered (file,
+		    _("Debuginfod functionality is currently set to "
+		      "\"%s\".\n"), debuginfod_enabled);
 }
 
 /* Set callback for "set debuginfod urls".  */
@@ -341,7 +342,7 @@ show_debuginfod_urls (ui_file *file, int from_tty, cmd_list_element *cmd,
 		      const char *value)
 {
   if (value[0] == '\0')
-    fprintf_unfiltered (file, _("Debuginfod URLs have not been set.\n"));
+    fprintf_filtered (file, _("Debuginfod URLs have not been set.\n"));
   else
     fprintf_filtered (file, _("Debuginfod URLs are currently set to:\n%s\n"),
 		      value);

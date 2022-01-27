@@ -1,6 +1,6 @@
 ## Process this file with automake to generate Makefile.in
 #
-#   Copyright (C) 2012-2021 Free Software Foundation, Inc.
+#   Copyright (C) 2012-2022 Free Software Foundation, Inc.
 #
 # This file is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,13 +17,18 @@
 # <http://www.gnu.org/licenses/>.
 #
 
-AUTOMAKE_OPTIONS = no-dist foreign
+AUTOMAKE_OPTIONS = no-dist foreign info-in-builddir no-texinfo.tex
 ACLOCAL_AMFLAGS = -I . -I .. -I ../config
+
+MOSTLYCLEANFILES =
+CLEANFILES =
+DISTCLEANFILES =
+MAINTAINERCLEANFILES =
 
 INCDIR = $(srcdir)/../include
 CSEARCH = -I. -I$(srcdir) -I$(INCDIR)
 
-SUBDIRS = doc po
+SUBDIRS = po
 
 bfddocdir = doc
 
@@ -920,50 +925,58 @@ LIBBFD_H_FILES = libbfd-in.h libbfd.c bfdio.c bfdwin.c \
 	cache.c reloc.c archures.c linker.c
 LIBCOFF_H_FILES = libcoff-in.h coffcode.h
 
-# Could really use a "copy-if-change"...
-headers:
-	(cd $(bfddocdir); $(MAKE) protos $(FLAGS_TO_PASS))
-	cp $(bfddocdir)/bfd.h bfd-in2.h-new
-	$(SHELL) $(srcdir)/../move-if-change bfd-in2.h-new $(srcdir)/bfd-in2.h
-	cp $(bfddocdir)/libbfd.h libbfd.h-new
-	$(SHELL) $(srcdir)/../move-if-change libbfd.h-new $(srcdir)/libbfd.h
-	cp $(bfddocdir)/libcoff.h libcoff.h-new
-	$(SHELL) $(srcdir)/../move-if-change libcoff.h-new $(srcdir)/libcoff.h
+headers: stmp-bin2-h stmp-lbfd-h stmp-lcoff-h
 
 # We only rebuild the header files automatically if we have been
 # configured with --enable-maintainer-mode.
 
+REGEN_HEADER = \
+	( \
+	set -e; \
+	echo "$$H_FILES" | sed -f $(srcdir)/doc/header.sed; \
+	for file in $$H_FILES; do \
+	  file="$(srcdir)/$$file"; \
+	  case $$file in \
+	    *-in.h) cat $$file;; \
+	    *)	echo $$file | sed -e 's,.*/,,' -e 's,^,/* Extracted from ,' \
+				-e 's,$$,.  */,'; \
+		$(MKDOC) $$CHEW_FLAGS -f $(srcdir)/doc/proto.str < $$file;; \
+	  esac; \
+	done; \
+	echo "\#ifdef __cplusplus"; \
+	echo "}"; \
+	echo "\#endif"; \
+	echo "\#endif"; \
+	)
+
 $(srcdir)/bfd-in2.h: @MAINT@ stmp-bin2-h ; @true
-stmp-bin2-h: $(BFD_H_FILES) $(BFD64_H_FILES)
-	(cd $(bfddocdir); $(MAKE) $(FLAGS_TO_PASS) bfd.h)
-	cp $(bfddocdir)/bfd.h bfd-in2.h-new
-	$(SHELL) $(srcdir)/../move-if-change bfd-in2.h-new $(srcdir)/bfd-in2.h
-	touch stmp-bin2-h
+stmp-bin2-h: $(BFD_H_FILES) $(BFD64_H_FILES) $(MKDOC)
+	$(AM_V_GEN)H_FILES="$(BFD_H_FILES)" CHEW_FLAGS= ; $(REGEN_HEADER) > bfd-in2.h-new
+	$(AM_V_at)$(SHELL) $(srcdir)/../move-if-change bfd-in2.h-new $(srcdir)/bfd-in2.h
+	$(AM_V_at)touch stmp-bin2-h
 
 $(srcdir)/libbfd.h: @MAINT@ stmp-lbfd-h ; @true
-stmp-lbfd-h: $(LIBBFD_H_FILES)
-	(cd $(bfddocdir); $(MAKE) $(FLAGS_TO_PASS) libbfd.h)
-	cp $(bfddocdir)/libbfd.h libbfd.h-new
-	$(SHELL) $(srcdir)/../move-if-change libbfd.h-new $(srcdir)/libbfd.h
-	touch stmp-lbfd-h
+stmp-lbfd-h: $(LIBBFD_H_FILES) $(MKDOC)
+	$(AM_V_GEN)H_FILES="$(LIBBFD_H_FILES)" CHEW_FLAGS=-i ; $(REGEN_HEADER) > libbfd.h-new
+	$(AM_V_at)$(SHELL) $(srcdir)/../move-if-change libbfd.h-new $(srcdir)/libbfd.h
+	$(AM_V_at)touch stmp-lbfd-h
 
 $(srcdir)/libcoff.h: @MAINT@ stmp-lcoff-h ; @true
-stmp-lcoff-h: $(LIBCOFF_H_FILES)
-	(cd $(bfddocdir); $(MAKE) $(FLAGS_TO_PASS) libcoff.h)
-	cp $(bfddocdir)/libcoff.h libcoff.h-new
-	$(SHELL) $(srcdir)/../move-if-change libcoff.h-new $(srcdir)/libcoff.h
-	touch stmp-lcoff-h
+stmp-lcoff-h: $(LIBCOFF_H_FILES) $(MKDOC)
+	$(AM_V_GEN)H_FILES="$(LIBCOFF_H_FILES)" CHEW_FLAGS=-i ; $(REGEN_HEADER) > libcoff.h-new
+	$(AM_V_at)$(SHELL) $(srcdir)/../move-if-change libcoff.h-new $(srcdir)/libcoff.h
+	$(AM_V_at)touch stmp-lcoff-h
 
-MOSTLYCLEANFILES = ofiles stamp-ofiles
+MOSTLYCLEANFILES += ofiles stamp-ofiles
 
-CLEANFILES = bfd.h dep.sed stmp-bfd-h DEP DEPA DEP1 DEP2 libbfd.a stamp-lib \
+CLEANFILES += bfd.h dep.sed stmp-bfd-h DEP DEPA DEP1 DEP2 libbfd.a stamp-lib \
 	stmp-bin2-h stmp-lbfd-h stmp-lcoff-h
 
-DISTCLEANFILES = $(BUILD_CFILES) $(BUILD_HFILES) libtool-soversion
+DISTCLEANFILES += $(BUILD_CFILES) $(BUILD_HFILES) libtool-soversion
 
 bfdver.h: $(srcdir)/version.h $(srcdir)/development.sh $(srcdir)/Makefile.in
-	@echo "creating $@"
-	@bfd_version=`echo "$(VERSION)" | $(SED) -e 's/\([^\.]*\)\.*\([^\.]*\)\.*\([^\.]*\)\.*\([^\.]*\)\.*\([^\.]*\).*/\1.00\2.00\3.00\4.00\5/' -e 's/\([^\.]*\)\..*\(..\)\..*\(..\)\..*\(..\)\..*\(..\)$$/\1\2\3\4\5/'` ;\
+	$(AM_V_GEN)\
+	bfd_version=`echo "$(VERSION)" | $(SED) -e 's/\([^\.]*\)\.*\([^\.]*\)\.*\([^\.]*\)\.*\([^\.]*\)\.*\([^\.]*\).*/\1.00\2.00\3.00\4.00\5/' -e 's/\([^\.]*\)\..*\(..\)\..*\(..\)\..*\(..\)\..*\(..\)$$/\1\2\3\4\5/'` ;\
 	bfd_version_string="\"$(VERSION)\"" ;\
 	bfd_soversion="$(VERSION)" ;\
 	bfd_version_package="\"$(PKGVERSION)\"" ;\
@@ -996,3 +1009,5 @@ coff-tic54x.lo: coff-tic54x.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC)$(LTCOMPILE) -c -o $@ $< $(NO_WERROR)
+
+include doc/local.mk

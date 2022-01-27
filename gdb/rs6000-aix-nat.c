@@ -1,6 +1,6 @@
 /* IBM RS/6000 native-dependent code for GDB, the GNU debugger.
 
-   Copyright (C) 1986-2021 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -90,6 +90,11 @@ public:
 			char **, int) override;
 
   ptid_t wait (ptid_t, struct target_waitstatus *, target_wait_flags) override;
+
+protected:
+
+  void post_startup_inferior (ptid_t ptid) override
+  { /* Nothing.  */ }
 
 private:
   enum target_xfer_status
@@ -539,7 +544,7 @@ rs6000_nat_target::wait (ptid_t ptid, struct target_waitstatus *ourstatus,
     ourstatus->set_spurious ();
   /* A normal waitstatus.  Let the usual macros deal with it.  */
   else
-    store_waitstatus (ourstatus, status);
+    *ourstatus = host_status_to_waitstatus (status);
 
   return ptid_t (pid);
 }

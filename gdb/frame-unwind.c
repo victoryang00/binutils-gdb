@@ -1,6 +1,6 @@
 /* Definitions for frame unwinder, for GDB, the GNU debugger.
 
-   Copyright (C) 2003-2021 Free Software Foundation, Inc.
+   Copyright (C) 2003-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -24,7 +24,7 @@
 #include "inline-frame.h"
 #include "value.h"
 #include "regcache.h"
-#include "gdb_obstack.h"
+#include "gdbsupport/gdb_obstack.h"
 #include "target.h"
 #include "gdbarch.h"
 #include "dwarf2/frame-tailcall.h"

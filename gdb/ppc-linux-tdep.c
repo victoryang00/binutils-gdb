@@ -1,6 +1,6 @@
 /* Target-dependent code for GDB, the GNU debugger.
 
-   Copyright (C) 1986-2021 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -1427,8 +1427,9 @@ ppc_linux_syscall_record (struct regcache *regcache)
 
   if (syscall_gdb < 0)
     {
-      printf_unfiltered (_("Process record and replay target doesn't "
-			   "support syscall number %d\n"), (int) scnum);
+      fprintf_unfiltered (gdb_stderr,
+			  _("Process record and replay target doesn't "
+			    "support syscall number %d\n"), (int) scnum);
       return 0;
     }
 

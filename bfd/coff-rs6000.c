@@ -1,5 +1,5 @@
 /* BFD back-end for IBM RS/6000 "XCOFF" files.
-   Copyright (C) 1990-2021 Free Software Foundation, Inc.
+   Copyright (C) 1990-2022 Free Software Foundation, Inc.
    Written by Metin G. Ozisik, Mimi Phuong-Thao Vo, and John Gilmore.
    Archive support from Damon A. Permezel.
    Contributed by IBM Corporation and Cygnus Support.
@@ -386,7 +386,7 @@ _bfd_xcoff_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
   else
     {
       sec = coff_section_from_bfd_index (ibfd, ix->sntoc);
-      if (sec == NULL)
+      if (sec == NULL || sec->output_section == NULL)
 	ox->sntoc = 0;
       else
 	ox->sntoc = sec->output_section->target_index;
@@ -396,7 +396,7 @@ _bfd_xcoff_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
   else
     {
       sec = coff_section_from_bfd_index (ibfd, ix->snentry);
-      if (sec == NULL)
+      if (sec == NULL || sec->output_section == NULL)
 	ox->snentry = 0;
       else
 	ox->snentry = sec->output_section->target_index;
@@ -1106,7 +1106,7 @@ reloc_howto_type xcoff_howto_table[] =
 	 0,			/* bitpos */
 	 complain_overflow_bitfield, /* complain_on_overflow */
 	 0,			/* special_function */
-	 "R_TLSM",		/* name */
+	 "R_TLSML",		/* name */
 	 true,			/* partial_inplace */
 	 0xffffffff,		/* src_mask */
 	 0xffffffff,		/* dst_mask */
@@ -1763,7 +1763,7 @@ _bfd_xcoff_openr_next_archived_file (bfd *archive, bfd *last_file)
 	}
     }
 
-  return _bfd_get_elt_at_filepos (archive, filestart);
+  return _bfd_get_elt_at_filepos (archive, filestart, NULL);
 }
 
 /* Stat an element in an XCOFF archive.  */
@@ -3236,27 +3236,19 @@ xcoff_reloc_type_tls (bfd *input_bfd ATTRIBUTE_UNUSED,
 
   h = obj_xcoff_sym_hashes (input_bfd)[rel->r_symndx];
 
-  /* FIXME: R_TLSML is targeting a internal TOC symbol, which will
-     make the following checks failing. It should be moved with
-     R_TLSM bellow once it works.  */
+  /* R_TLSML is handled by the loader but must be from a
+     TOC entry targeting itslef.  This is already verified in
+     xcoff_link_add_symbols.
+     The value must be 0.  */
   if (howto->type == R_TLSML)
     {
       *relocation = 0;
       return true;
     }
 
-  /* FIXME: h is sometimes null, if the TLS symbol is not exported.  */
-  if (!h)
-    {
-      char vaddr_buf[128];
-
-      sprintf_vma (vaddr_buf, rel->r_vaddr);
-      _bfd_error_handler
-	(_("%pB: TLS relocation at 0x%s over internal symbols (C_HIDEXT) not yet possible\n"),
-	 input_bfd, vaddr_buf);
-      return false;
-    }
-
+  /* The target symbol should always be available even if it's not
+     exported.  */
+  BFD_ASSERT (h != NULL);
 
   /* TLS relocations must target a TLS symbol.  */
   if (h->smclas != XMC_TL && h->smclas != XMC_UL)
@@ -3286,9 +3278,8 @@ xcoff_reloc_type_tls (bfd *input_bfd ATTRIBUTE_UNUSED,
       return false;
     }
 
-  /* R_TLSM and R_TLSML are relocations used by the loader.
-     The value must be 0.
-     FIXME: move R_TLSML here.  */
+  /* R_TLSM are relocations used by the loader.
+     The value must be 0.  */
   if (howto->type == R_TLSM)
     {
       *relocation = 0;
@@ -3621,10 +3612,10 @@ xcoff_complain_overflow_unsigned_func (bfd *input_bfd,
    R_TLS_LE:
    Thread-local storage relocation using local-exec model.
 
-   R_TLS:
+   R_TLSM:
    Tread-local storage relocation used by the loader.
 
-   R_TLSM:
+   R_TLSML:
    Tread-local storage relocation used by the loader.
 
    R_TOCU:

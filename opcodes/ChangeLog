@@ -1,3 +1,22 @@
+2022-01-24  Nick Clifton  <nickc@redhat.com>
+
+	* po/ro.po: Updated Romanian translation.
+	* po/uk.po: Updated Ukranian translation.
+
+2022-01-22  Nick Clifton  <nickc@redhat.com>
+
+	* configure: Regenerate.
+	* po/opcodes.pot: Regenerate.
+
+2022-01-22  Nick Clifton  <nickc@redhat.com>
+
+	* 2.38 release branch created.
+
+2022-01-17  Nick Clifton  <nickc@redhat.com>
+
+	* Makefile.in: Regenerate.
+	* po/opcodes.pot: Regenerate.
+
 2021-12-02  Marcus Nilsson  <brainbomb@gmail.com>
 
 	* avr-dis.c (avr_operand); Pass in disassemble_info and fill
@@ -1234,7 +1253,7 @@
 
 For older changes see ChangeLog-2020
 
-Copyright (C) 2021 Free Software Foundation, Inc.
+Copyright (C) 2021-2022 Free Software Foundation, Inc.
 
 Copying and distribution of this file, with or without modification,
 are permitted in any medium without royalty provided the copyright

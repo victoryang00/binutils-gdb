@@ -1,6 +1,6 @@
 /* Command-line output logging for GDB, the GNU debugger.
 
-   Copyright (C) 2003-2021 Free Software Foundation, Inc.
+   Copyright (C) 2003-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -24,7 +24,7 @@
 #include "cli/cli-style.h"
 #include "cli/cli-decode.h"
 
-static char *saved_filename;
+static std::string saved_filename;
 
 static std::string logging_filename = "gdb.txt";
 static void
@@ -40,9 +40,9 @@ static bool logging_overwrite;
 static void
 maybe_warn_already_logging ()
 {
-  if (saved_filename)
+  if (!saved_filename.empty ())
     warning (_("Currently logging to %s.  Turn the logging off and on to "
-	       "make the new setting effective."), saved_filename);
+	       "make the new setting effective."), saved_filename.c_str ());
 }
 
 static void
@@ -56,10 +56,10 @@ static void
 show_logging_overwrite (struct ui_file *file, int from_tty,
 			struct cmd_list_element *c, const char *value)
 {
-  fprintf_filtered (file,
-		    _("Whether logging overwrites or "
-		      "appends to the log file is %s.\n"),
-		    value);
+  if (logging_overwrite)
+    fprintf_filtered (file, _("on: Logging overwrites the log file.\n"));
+  else
+    fprintf_filtered (file, _("off: Logging appends to the log file.\n"));
 }
 
 /* Value as configured by the user.  */
@@ -77,7 +77,25 @@ static void
 show_logging_redirect (struct ui_file *file, int from_tty,
 		       struct cmd_list_element *c, const char *value)
 {
-  fprintf_filtered (file, _("The logging output mode is %s.\n"), value);
+  if (logging_redirect)
+    fprintf_filtered(file, _("on: Output will go only to the log file.\n"));
+  else
+    fprintf_filtered
+      (file,
+       _("off: Output will go to both the screen and the log file.\n"));
+}
+
+static void
+show_logging_debug_redirect (struct ui_file *file, int from_tty,
+		       struct cmd_list_element *c, const char *value)
+{
+  if (debug_redirect)
+    fprintf_filtered(file,
+		     _("on: Debug output will go only to the log file.\n"));
+  else
+    fprintf_filtered
+      (file,
+       _("off: Debug output will go to both the screen and the log file.\n"));
 }
 
 /* If we've pushed output files, close them and pop them.  */
@@ -95,10 +113,10 @@ pop_output_files (void)
 static void
 handle_redirections (int from_tty)
 {
-  if (saved_filename != NULL)
+  if (!saved_filename.empty ())
     {
-      fprintf_unfiltered (gdb_stdout, "Already logging to %s.\n",
-			  saved_filename);
+      printf_filtered ("Already logging to %s.\n",
+		       saved_filename.c_str ());
       return;
     }
 
@@ -110,21 +128,21 @@ handle_redirections (int from_tty)
   if (from_tty)
     {
       if (!logging_redirect)
-	fprintf_unfiltered (gdb_stdout, "Copying output to %s.\n",
-			    logging_filename.c_str ());
+	printf_filtered ("Copying output to %s.\n",
+			 logging_filename.c_str ());
       else
-	fprintf_unfiltered (gdb_stdout, "Redirecting output to %s.\n",
-			    logging_filename.c_str ());
+	printf_filtered ("Redirecting output to %s.\n",
+			 logging_filename.c_str ());
 
       if (!debug_redirect)
-	fprintf_unfiltered (gdb_stdout, "Copying debug output to %s.\n",
-			    logging_filename.c_str ());
+	printf_filtered ("Copying debug output to %s.\n",
+			 logging_filename.c_str ());
       else
-	fprintf_unfiltered (gdb_stdout, "Redirecting debug output to %s.\n",
-			    logging_filename.c_str ());
+	printf_filtered ("Redirecting debug output to %s.\n",
+			 logging_filename.c_str ());
     }
 
-  saved_filename = xstrdup (logging_filename.c_str ());
+  saved_filename = logging_filename;
 
   /* Let the interpreter do anything it needs.  */
   current_interp_set_logging (std::move (log), logging_redirect,
@@ -154,14 +172,14 @@ set_logging_on (const char *args, int from_tty)
 static void 
 set_logging_off (const char *args, int from_tty)
 {
-  if (saved_filename == NULL)
+  if (saved_filename.empty ())
     return;
 
   pop_output_files ();
   if (from_tty)
-    fprintf_unfiltered (gdb_stdout, "Done logging to %s.\n", saved_filename);
-  xfree (saved_filename);
-  saved_filename = NULL;
+    printf_filtered ("Done logging to %s.\n",
+		     saved_filename.c_str ());
+  saved_filename.clear ();
 }
 
 static bool logging_enabled;
@@ -181,9 +199,9 @@ show_logging_enabled (struct ui_file *file, int from_tty,
 		       struct cmd_list_element *c, const char *value)
 {
   if (logging_enabled)
-    printf_unfiltered (_("Logging is enabled.\n"));
+    fprintf_unfiltered (file, _("on: Logging is enabled.\n"));
   else
-    printf_unfiltered (_("Logging is disabled.\n"));
+    fprintf_unfiltered (file, _("off: Logging is disabled.\n"));
 }
 
 void _initialize_cli_logging ();
@@ -226,7 +244,7 @@ Show the logging debug output mode."), _("\
 If debug redirect is off, debug will go to both the screen and the log file.\n\
 If debug redirect is on, debug will go only to the log file."),
 			   set_logging_redirect,
-			   show_logging_redirect,
+			   show_logging_debug_redirect,
 			   &set_logging_cmdlist, &show_logging_cmdlist);
 
   /* Set/show logging file.  */

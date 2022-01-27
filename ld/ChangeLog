@@ -1,3 +1,48 @@
+2022-01-24  Nick Clifton  <nickc@redhat.com>
+
+	* po/bg.po: Updated Bulgarian translation.
+	* po/uk.po: Updated Ukranian translation.
+
+2022-01-22  Alexander von Gluck IV  <kallisti5@unixzen.com>
+
+	* configure.tgt (arm-haiku): Fix typo.
+	* emulparams/armelf_haiku.su (MAXPAGESIZE): Use the default value.
+	(COMMONPAGESIZE): Likewise.
+
+2022-01-22  Nick Clifton  <nickc@redhat.com>
+
+	* configure: Regenerate.
+	* po/ld.pot: Regenerate.
+
+2022-01-22  Nick Clifton  <nickc@redhat.com>
+
+	* 2.38 release branch created.
+
+2022-01-21  Nick Clifton  <nickc@redhat.com>
+
+	* po/sr.po: Updated Serbian translation.
+
+2022-01-17  Nick Clifton  <nickc@redhat.com>
+
+	* Makefile.in: Regenerate.
+	* po/ld.pot: Regenerate.
+
+2022-01-11  Martin Storsjö  <martin@martin.st>
+
+	* pe-dll.c (make_head): Prefix the symbol name with the dll name.
+	(make_tail, make_one, make_singleton_name_thunk): Likewise.
+	(make_import_fixup_entry, make_runtime_pseudo_reloc): Likewise.
+	(pe_create_runtime_relocator_reference): Likewise.
+	(pe_dll_generate_implib): Set dll_symname_len.
+	(pe_process_import_defs): Likewise.
+
+2021-12-16  Nick Clifton  <nickc@redhat.com>
+
+	PR 28686
+	* testsuite/ld-avr/avr-prop-7.d: Adjust expected output.
+	* testsuite/ld-avr/avr-prop-8.d: Likewise.
+	* testsuite/ld-avr/pr13402.d: Likewise.
+
 2021-11-30  Nick Clifton  <nickc@redhat.com>
 
 	* scripttempl/pru.sc (.pru_irq_map): Define output section.
@@ -1747,7 +1792,7 @@
 
 For older changes see ChangeLog-2020
 
-Copyright (C) 2021 Free Software Foundation, Inc.
+Copyright (C) 2021-2022 Free Software Foundation, Inc.
 
 Copying and distribution of this file, with or without modification,
 are permitted in any medium without royalty provided the copyright

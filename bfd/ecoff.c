@@ -1,5 +1,5 @@
 /* Generic ECOFF (Extended-COFF) routines.
-   Copyright (C) 1990-2021 Free Software Foundation, Inc.
+   Copyright (C) 1990-2022 Free Software Foundation, Inc.
    Original version by Per Bothner.
    Full support added by Ian Lance Taylor, ian@cygnus.com.
 
@@ -3639,7 +3639,9 @@ ecoff_link_add_archive_symbols (bfd *abfd, struct bfd_link_info *info)
 	  hash = srch;
 	}
 
-      element = (*backend->get_elt_at_filepos) (abfd, (file_ptr) file_offset);
+      element = (*backend->get_elt_at_filepos) (abfd,
+						(file_ptr) file_offset,
+						info);
       if (element == NULL)
 	return false;
 

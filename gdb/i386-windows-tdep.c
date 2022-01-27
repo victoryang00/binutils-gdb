@@ -1,7 +1,7 @@
 /* Target-dependent code for Windows (including Cygwin) running on i386's,
    for GDB.
 
-   Copyright (C) 2003-2021 Free Software Foundation, Inc.
+   Copyright (C) 2003-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -23,7 +23,7 @@
 #include "i386-tdep.h"
 #include "windows-tdep.h"
 #include "regset.h"
-#include "gdb_obstack.h"
+#include "gdbsupport/gdb_obstack.h"
 #include "xml-support.h"
 #include "gdbcore.h"
 #include "inferior.h"

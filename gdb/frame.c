@@ -1,6 +1,6 @@
 /* Cache and manage frames for GDB, the GNU debugger.
 
-   Copyright (C) 1986-2021 Free Software Foundation, Inc.
+   Copyright (C) 1986-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -24,7 +24,7 @@
 #include "inferior.h"	/* for inferior_ptid */
 #include "regcache.h"
 #include "user-regs.h"
-#include "gdb_obstack.h"
+#include "gdbsupport/gdb_obstack.h"
 #include "dummy-frame.h"
 #include "sentinel-frame.h"
 #include "gdbcore.h"
@@ -1261,7 +1261,7 @@ frame_unwind_register_value (frame_info *next_frame, int regnum)
 	  else
 	    {
 	      int i;
-	      const gdb_byte *buf = value_contents (value).data ();
+	      gdb::array_view<const gdb_byte> buf = value_contents (value);
 
 	      fprintf_unfiltered (&debug_file, " bytes=");
 	      fprintf_unfiltered (&debug_file, "[");
@@ -1288,7 +1288,6 @@ frame_unwind_register_signed (frame_info *next_frame, int regnum)
 {
   struct gdbarch *gdbarch = frame_unwind_arch (next_frame);
   enum bfd_endian byte_order = gdbarch_byte_order (gdbarch);
-  int size = register_size (gdbarch, regnum);
   struct value *value = frame_unwind_register_value (next_frame, regnum);
 
   gdb_assert (value != NULL);
@@ -1304,8 +1303,7 @@ frame_unwind_register_signed (frame_info *next_frame, int regnum)
 		   _("Register %d is not available"), regnum);
     }
 
-  LONGEST r = extract_signed_integer (value_contents_all (value).data (), size,
-				      byte_order);
+  LONGEST r = extract_signed_integer (value_contents_all (value), byte_order);
 
   release_value (value);
   return r;

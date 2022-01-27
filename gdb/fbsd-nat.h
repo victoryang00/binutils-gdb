@@ -1,6 +1,6 @@
 /* Native-dependent code for FreeBSD.
 
-   Copyright (C) 2004-2021 Free Software Foundation, Inc.
+   Copyright (C) 2004-2022 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -76,7 +76,6 @@ public:
 
   ptid_t wait (ptid_t, struct target_waitstatus *, target_wait_flags) override;
 
-  void post_startup_inferior (ptid_t) override;
   void post_attach (int) override;
 
 #ifdef USE_SIGTRAP_SIGINFO
@@ -105,6 +104,10 @@ public:
   bool supports_multi_process () override;
 
   bool supports_disable_randomization () override;
+
+protected:
+
+  void post_startup_inferior (ptid_t) override;
 
 private:
   /* Helper routines for use in fetch_registers and store_registers in
