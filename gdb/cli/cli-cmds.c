@@ -192,6 +192,11 @@ static const char *const script_ext_enums[] = {
 
 static const char *script_ext_mode = script_ext_soft;
 
+
+/* User-controllable flag to suppress event notification on CLI.  */
+
+static bool user_wants_cli_suppress_notification = false;
+
 /* Utility used everywhere when at least one argument is needed and
    none is supplied.  */
 
@@ -968,6 +973,10 @@ edit_command (const char *arg, int from_tty)
       arg1 = arg;
       event_location_up location = string_to_event_location (&arg1,
 							     current_language);
+
+      if (*arg1)
+	error (_("Junk at end of line specification."));
+
       std::vector<symtab_and_line> sals = decode_line_1 (location.get (),
 							 DECODE_LINE_LIST_MODE,
 							 NULL, NULL, 0);
@@ -987,9 +996,6 @@ edit_command (const char *arg, int from_tty)
 
       sal = sals[0];
 
-      if (*arg1)
-	error (_("Junk at end of line specification."));
-
       /* If line was specified by address, first print exactly which
 	 line, and which file.  In this case, sal.symtab == 0 means
 	 address is outside of all known source files, not that user
@@ -1002,7 +1008,7 @@ edit_command (const char *arg, int from_tty)
 	    error (_("No source file for address %s."),
 		   paddress (get_current_arch (), sal.pc));
 
-	  gdbarch = SYMTAB_OBJFILE (sal.symtab)->arch ();
+	  gdbarch = sal.symtab->objfile ()->arch ();
 	  sym = find_pc_function (sal.pc);
 	  if (sym)
 	    printf_filtered ("%s is in %s (%s:%d).\n",
@@ -1238,6 +1244,15 @@ list_command (const char *arg, int from_tty)
     {
       event_location_up location = string_to_event_location (&arg1,
 							     current_language);
+
+      /* We know that the ARG string is not empty, yet the attempt to parse
+	 a location from the string consumed no characters.  This most
+	 likely means that the first thing in ARG looks like a location
+	 condition, and so the string_to_event_location call stopped
+	 parsing.  */
+      if (arg1 == arg)
+	error (_("Junk at end of line specification."));
+
       sals = decode_line_1 (location.get (), DECODE_LINE_LIST_MODE,
 			    NULL, NULL, 0);
       filter_sals (sals);
@@ -1286,6 +1301,9 @@ list_command (const char *arg, int from_tty)
 	  event_location_up location
 	    = string_to_event_location (&arg1, current_language);
 
+	  if (*arg1)
+	    error (_("Junk at end of line specification."));
+
 	  std::vector<symtab_and_line> sals_end
 	    = (dummy_beg
 	       ? decode_line_1 (location.get (), DECODE_LINE_LIST_MODE,
@@ -1329,7 +1347,7 @@ list_command (const char *arg, int from_tty)
 	error (_("No source file for address %s."),
 	       paddress (get_current_arch (), sal.pc));
 
-      gdbarch = SYMTAB_OBJFILE (sal.symtab)->arch ();
+      gdbarch = sal.symtab->objfile ()->arch ();
       sym = find_pc_function (sal.pc);
       if (sym)
 	printf_filtered ("%s is in %s (%s:%d).\n",
@@ -2033,8 +2051,8 @@ ambiguous_line_spec (gdb::array_view<const symtab_and_line> sals,
 static int
 cmp_symtabs (const symtab_and_line &sala, const symtab_and_line &salb)
 {
-  const char *dira = SYMTAB_DIRNAME (sala.symtab);
-  const char *dirb = SYMTAB_DIRNAME (salb.symtab);
+  const char *dira = sala.symtab->dirname ();
+  const char *dirb = salb.symtab->dirname ();
   int r;
 
   if (dira == NULL)
@@ -2121,6 +2139,28 @@ show_max_user_call_depth (struct ui_file *file, int from_tty,
   fprintf_filtered (file,
 		    _("The max call depth for user-defined commands is %s.\n"),
 		    value);
+}
+
+/* Implement 'show suppress-cli-notifications'.  */
+
+static void
+show_suppress_cli_notifications (ui_file *file, int from_tty,
+				 cmd_list_element *c, const char *value)
+{
+  fprintf_filtered (file, _("Suppression of printing CLI notifications "
+			    "is %s.\n"), value);
+}
+
+/* Implement 'set suppress-cli-notifications'.  */
+
+static void
+set_suppress_cli_notifications (const char *args, int from_tty,
+				cmd_list_element *c)
+{
+  cli_suppress_notification.user_selected_context
+    = user_wants_cli_suppress_notification;
+  cli_suppress_notification.normal_stop
+    = user_wants_cli_suppress_notification;
 }
 
 /* Returns the cmd_list_element in SHOWLIST corresponding to the first
@@ -2720,6 +2760,18 @@ Make \"wLapPeu\" an alias of 2 nested \"with\":\n\
 	       alias_help.c_str ());
 
   set_cmd_completer_handle_brkchars (c, alias_command_completer);
+
+  add_setshow_boolean_cmd ("suppress-cli-notifications", no_class,
+			   &user_wants_cli_suppress_notification,
+			   _("\
+Set whether printing notifications on CLI is suppressed."), _("\
+Show whether printing notifications on CLI is suppressed."), _("\
+When on, printing notifications (such as inferior/thread switch)\n\
+on CLI is suppressed."),
+			   set_suppress_cli_notifications,
+			   show_suppress_cli_notifications,
+			   &setlist,
+			   &showlist);
 
   const char *source_help_text = xstrprintf (_("\
 Read commands from a file named FILE.\n\

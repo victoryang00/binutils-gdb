@@ -26132,6 +26132,21 @@ then it will be used.
 
 @item show style sources
 Show the current state of source code styling.
+
+@item set style disassembler enabled @samp{on|off}
+Enable or disable disassembler styling.  This affects whether
+disassembler output, such as the output of the @code{disassemble}
+command, is styled.  Disassembler styling only works if styling in
+general is enabled (with @code{set style enabled on}), and if a source
+highlighting library is available to @value{GDBN}.
+
+To highlight disassembler output, @value{GDBN} must be compiled with
+Python support, and the Python Pygments package must be available.  If
+these requirements are not met then @value{GDBN} will not highlight
+disassembler output, even when this option is @samp{on}.
+
+@item show style disassembler enabled
+Show the current state of disassembler styling.
 @end table
 
 Subcommands of @code{set style} control specific forms of styling.
@@ -27209,6 +27224,75 @@ inside a cygwin window.
 @kindex show interactive-mode
 @item show interactive-mode
 Displays whether the debugger is operating in interactive mode or not.
+@end table
+
+@table @code
+@kindex set suppress-cli-notifications
+@item set suppress-cli-notifications
+If @code{on}, command-line-interface (CLI) notifications that are
+printed by @value{GDBN} are suppressed.  If @code{off}, the
+notifications are printed as usual.  The default value is @code{off}.
+CLI notifications occur when you change the selected context or when
+the program being debugged stops, as detailed below.
+
+@table @emph
+@item User-selected context changes:
+When you change the selected context (i.e.@: the current inferior,
+thread and/or the frame), @value{GDBN} prints information about the
+new context.  For example, the default behavior is below:
+
+@smallexample
+(gdb) inferior 1
+[Switching to inferior 1 [process 634] (/tmp/test)]
+[Switching to thread 1 (process 634)]
+#0  main () at test.c:3
+3         return 0;
+(gdb)
+@end smallexample
+
+When the notifications are suppressed, the new context is not printed:
+
+@smallexample
+(gdb) set suppress-cli-notifications on
+(gdb) inferior 1
+(gdb)
+@end smallexample
+
+@item The program being debugged stops:
+When the program you are debugging stops (e.g.@: because of hitting a
+breakpoint, completing source-stepping, an interrupt, etc.),
+@value{GDBN} prints information about the stop event.  For example,
+below is a breakpoint hit:
+
+@smallexample
+(gdb) break test.c:3
+Breakpoint 2 at 0x555555555155: file test.c, line 3.
+(gdb) continue
+Continuing.
+
+Breakpoint 2, main () at test.c:3
+3         return 0;
+(gdb)
+@end smallexample
+
+When the notifications are suppressed, the output becomes:
+
+@smallexample
+(gdb) break test.c:3
+Breakpoint 2 at 0x555555555155: file test.c, line 3.
+(gdb) set suppress-cli-notifications on
+(gdb) continue
+Continuing.
+(gdb)
+@end smallexample
+
+Suppressing CLI notifications may be useful in scripts to obtain a
+reduced output from a list of commands.
+@end table
+
+@kindex show suppress-cli-notifications
+@item show suppress-cli-notifications
+Displays whether printing CLI notifications is suppressed or not.
 @end table
 
 @node Extending GDB
@@ -28812,9 +28896,10 @@ otherwise a default layout is used.
 @kindex tui disable
 Disable TUI mode, returning to the console interpreter.
 
+@anchor{info_win_command}
 @item info win
 @kindex info win
-List and give the size of all displayed windows.
+List the names and sizes of all currently displayed windows.
 
 @item tui new-layout @var{name} @var{window} @var{weight} @r{[}@var{window} @var{weight}@dots{}@r{]}
 @kindex tui new-layout
@@ -28961,11 +29046,11 @@ Update the source window and the current execution point.
 @item winheight @var{name} +@var{count}
 @itemx winheight @var{name} -@var{count}
 @kindex winheight
-Change the height of the window @var{name} by @var{count}
-lines.  Positive counts increase the height, while negative counts
-decrease it.  The @var{name} parameter can be one of @code{src} (the
-source window), @code{cmd} (the command window), @code{asm} (the
-disassembly window), or @code{regs} (the register display window).
+Change the height of the window @var{name} by @var{count} lines.
+Positive counts increase the height, while negative counts decrease
+it.  The @var{name} parameter can be the name of any currently visible
+window.  The names of the currently visible windows can be discovered
+using @kbd{info win} (@pxref{info_win_command,,info win}).
 @end table
 
 @node TUI Configuration
@@ -46223,6 +46308,7 @@ registers using the capitalization used in the description.
 * ARC Features::
 * ARM Features::
 * i386 Features::
+* LoongArch Features::
 * MicroBlaze Features::
 * MIPS Features::
 * M68K Features::
@@ -46450,6 +46536,15 @@ describe the additional @sc{zmm} registers:
 The @samp{org.gnu.gdb.i386.pkeys} feature is optional.  It should
 describe a single register, @samp{pkru}.  It is a 32-bit register
 valid for i386 and amd64.
+
+@node LoongArch Features
+@subsection LoongArch Features
+@cindex target descriptions, LoongArch Features
+
+The @samp{org.gnu.gdb.loongarch.base} feature is required for LoongArch
+targets.  It should contain the registers @samp{r0} through @samp{r31},
+@samp{pc}, and @samp{badv}.  Either the architectural names (@samp{r0},
+@samp{r1}, etc) can be used, or the ABI names (@samp{zero}, @samp{ra}, etc).
 
 @node MicroBlaze Features
 @subsection MicroBlaze Features

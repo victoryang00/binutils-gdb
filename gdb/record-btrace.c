@@ -279,10 +279,10 @@ require_btrace (void)
   return &tp->btrace;
 }
 
-/* Enable branch tracing for one thread.  Warn on errors.  */
+/* The new thread observer.  */
 
 static void
-record_btrace_enable_warn (struct thread_info *tp)
+record_btrace_on_new_thread (struct thread_info *tp)
 {
   /* Ignore this thread if its inferior is not recorded by us.  */
   target_ops *rec = tp->inf->target_at (record_stratum);
@@ -306,7 +306,7 @@ record_btrace_auto_enable (void)
 {
   DEBUG ("attach thread observer");
 
-  gdb::observers::new_thread.attach (record_btrace_enable_warn,
+  gdb::observers::new_thread.attach (record_btrace_on_new_thread,
 				     record_btrace_thread_observer_token,
 				     "record-btrace");
 }
@@ -713,7 +713,7 @@ btrace_find_line_range (CORE_ADDR pc)
   if (symtab == NULL)
     return btrace_mk_line_range (NULL, 0, 0);
 
-  ltable = SYMTAB_LINETABLE (symtab);
+  ltable = symtab->linetable ();
   if (ltable == NULL)
     return btrace_mk_line_range (symtab, 0, 0);
 

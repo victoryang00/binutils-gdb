@@ -524,6 +524,24 @@ elf_x86_allocate_dynrelocs (struct elf_link_hash_entry *h, void *inf)
     {
       asection *sreloc;
 
+      if (eh->def_protected
+	  && elf_has_no_copy_on_protected (h->root.u.def.section->owner))
+	{
+	  /* Disallow copy relocation against non-copyable protected
+	     symbol.  */
+	  asection *s = p->sec->output_section;
+	  if (s != NULL && (s->flags & SEC_READONLY) != 0)
+	    {
+	      info->callbacks->einfo
+		/* xgettext:c-format */
+		(_("%F%P: %pB: copy relocation against non-copyable "
+		   "protected symbol `%s' in %pB\n"),
+		 p->sec->owner, h->root.root.string,
+		 h->root.u.def.section->owner);
+	      return false;
+	    }
+	}
+
       sreloc = elf_section_data (p->sec)->sreloc;
 
       BFD_ASSERT (sreloc != NULL);
@@ -1484,11 +1502,13 @@ elf_x86_size_or_finish_relative_reloc
 		}
 	      else
 		{
-		  /* Allow undefined symbol only at the sizing phase.  */
+		  /* Allow undefined symbol only at the sizing phase.
+		     Otherwise skip undefined symbol here.  Undefined
+		     symbol will be reported by relocate_section.  */
 		  if (outrel == NULL)
 		    relocation = 0;
 		  else
-		    abort ();
+		    continue;
 		}
 	    }
 	  else
@@ -1940,9 +1960,9 @@ _bfd_elf_x86_valid_reloc_p (asection *input_section,
       irel = *rel;
 
       /* Only allow relocations against absolute symbol, which can be
-	 resolved as absolute value + addend.  GOTPCREL relocations
-	 are allowed since absolute value + addend is stored in the
-	 GOT slot.  */
+	 resolved as absolute value + addend.  GOTPCREL and GOT32
+	 relocations are allowed since absolute value + addend is
+	 stored in the GOT slot.  */
       if (bed->target_id == X86_64_ELF_DATA)
 	{
 	  r_type &= ~R_X86_64_converted_reloc_bit;
@@ -1963,7 +1983,9 @@ _bfd_elf_x86_valid_reloc_p (asection *input_section,
       else
 	valid_p = (r_type == R_386_32
 		   || r_type == R_386_16
-		   || r_type == R_386_8);
+		   || r_type == R_386_8
+		   || r_type == R_386_GOT32
+		   || r_type == R_386_GOT32X);
 
       if (valid_p)
 	*no_dynreloc_p = true;

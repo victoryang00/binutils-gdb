@@ -848,7 +848,7 @@ step_1 (int skip_subroutines, int single_inst, const char *count_string)
      steps.  */
   thr = inferior_thread ();
   step_sm = new step_command_fsm (command_interp ());
-  thr->thread_fsm = step_sm;
+  thr->set_thread_fsm (std::unique_ptr<thread_fsm> (step_sm));
 
   step_command_fsm_prepare (step_sm, skip_subroutines,
 			    single_inst, count, thr);
@@ -865,7 +865,7 @@ step_1 (int skip_subroutines, int single_inst, const char *count_string)
 
       /* Stepped into an inline frame.  Pretend that we've
 	 stopped.  */
-      thr->thread_fsm->clean_up (thr);
+      thr->thread_fsm ()->clean_up (thr);
       proceeded = normal_stop ();
       if (!proceeded)
 	inferior_event_handler (INF_EXEC_COMPLETE);
@@ -976,7 +976,7 @@ prepare_one_step (thread_info *tp, struct step_command_fsm *sm)
 	  if (inline_skipped_frames (tp) > 0)
 	    {
 	      symbol *sym = inline_skipped_symbol (tp);
-	      if (SYMBOL_CLASS (sym) == LOC_BLOCK)
+	      if (sym->aclass () == LOC_BLOCK)
 		{
 		  const block *block = SYMBOL_BLOCK_VALUE (sym);
 		  if (BLOCK_END (block) < tp->control.step_range_end)
@@ -1346,6 +1346,45 @@ until_next_command (int from_tty)
 
       tp->control.step_range_start = BLOCK_ENTRY_PC (SYMBOL_BLOCK_VALUE (func));
       tp->control.step_range_end = sal.end;
+
+      /* By setting the step_range_end based on the current pc, we are
+	 assuming that the last line table entry for any given source line
+	 will have is_stmt set to true.  This is not necessarily the case,
+	 there may be additional entries for the same source line with
+	 is_stmt set false.  Consider the following code:
+
+	 for (int i = 0; i < 10; i++)
+	   loop_body ();
+
+	 Clang-13, will generate multiple line table entries at the end of
+	 the loop all associated with the 'for' line.  The first of these
+	 entries is marked is_stmt true, but the other entries are is_stmt
+	 false.
+
+	 If we only use the values in SAL, then our stepping range may not
+	 extend to the end of the loop. The until command will reach the
+	 end of the range, find a non is_stmt instruction, and step to the
+	 next is_stmt instruction. This stopping point, however, will be
+	 inside the loop, which is not what we wanted.
+
+	 Instead, we now check any subsequent line table entries to see if
+	 they are for the same line.  If they are, and they are marked
+	 is_stmt false, then we extend the end of our stepping range.
+
+	 When we finish this process the end of the stepping range will
+	 point either to a line with a different line number, or, will
+	 point at an address for the same line number that is marked as a
+	 statement.  */
+
+      struct symtab_and_line final_sal
+	= find_pc_line (tp->control.step_range_end, 0);
+
+      while (final_sal.line == sal.line && final_sal.symtab == sal.symtab
+	     && !final_sal.is_stmt)
+	{
+	  tp->control.step_range_end = final_sal.end;
+	  final_sal = find_pc_line (final_sal.end, 0);
+	}
     }
   tp->control.may_range_step = 1;
 
@@ -1355,7 +1394,7 @@ until_next_command (int from_tty)
   delete_longjmp_breakpoint_cleanup lj_deleter (thread);
 
   sm = new until_next_fsm (command_interp (), tp->global_num);
-  tp->thread_fsm = sm;
+  tp->set_thread_fsm (std::unique_ptr<thread_fsm> (sm));
   lj_deleter.release ();
 
   proceed ((CORE_ADDR) -1, GDB_SIGNAL_DEFAULT);
@@ -1405,19 +1444,27 @@ advance_command (const char *arg, int from_tty)
   until_break_command (arg, from_tty, 1);
 }
 
-/* Return the value of the result of a function at the end of a 'finish'
-   command/BP.  DTOR_DATA (if not NULL) can represent inferior registers
-   right after an inferior call has finished.  */
+/* See inferior.h.  */
 
 struct value *
-get_return_value (struct value *function, struct type *value_type)
+get_return_value (struct symbol *func_symbol, struct value *function)
 {
   regcache *stop_regs = get_current_regcache ();
   struct gdbarch *gdbarch = stop_regs->arch ();
   struct value *value;
 
-  value_type = check_typedef (value_type);
+  struct type *value_type
+    = check_typedef (TYPE_TARGET_TYPE (func_symbol->type ()));
   gdb_assert (value_type->code () != TYPE_CODE_VOID);
+
+  if (is_nocall_function (check_typedef (::value_type (function))))
+    {
+      warning (_("Function '%s' does not follow the target calling "
+		 "convention, cannot determine its returned value."),
+	       func_symbol->print_name ());
+
+      return nullptr;
+    }
 
   /* FIXME: 2003-09-27: When returning from a nested inferior function
      call, it's possible (with no help from the architecture vector)
@@ -1567,7 +1614,7 @@ finish_command_fsm::should_stop (struct thread_info *tp)
       /* We're done.  */
       set_finished ();
 
-      rv->type = TYPE_TARGET_TYPE (SYMBOL_TYPE (function));
+      rv->type = TYPE_TARGET_TYPE (function->type ());
       if (rv->type == NULL)
 	internal_error (__FILE__, __LINE__,
 			_("finish_command: function has no target type"));
@@ -1577,7 +1624,7 @@ finish_command_fsm::should_stop (struct thread_info *tp)
 	  struct value *func;
 
 	  func = read_var_value (function, NULL, get_current_frame ());
-	  rv->value = get_return_value (func, rv->type);
+	  rv->value = get_return_value (function, func);
 	  if (rv->value != NULL)
 	    rv->value_history_index = record_latest_value (rv->value);
 	}
@@ -1762,7 +1809,7 @@ finish_command (const char *arg, int from_tty)
 
   sm = new finish_command_fsm (command_interp ());
 
-  tp->thread_fsm = sm;
+  tp->set_thread_fsm (std::unique_ptr<thread_fsm> (sm));
 
   /* Finishing from an inline frame is completely different.  We don't
      try to show the "return value" - no way to locate it.  */
@@ -1803,7 +1850,7 @@ finish_command (const char *arg, int from_tty)
 	printf_filtered (_("Run back to call of "));
       else
 	{
-	  if (sm->function != NULL && TYPE_NO_RETURN (sm->function->type)
+	  if (sm->function != NULL && TYPE_NO_RETURN (sm->function->type ())
 	      && !query (_("warning: Function %s does not return normally.\n"
 			   "Try to finish anyway? "),
 			 sm->function->print_name ()))

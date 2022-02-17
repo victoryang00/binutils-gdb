@@ -1891,8 +1891,8 @@ lang_insert_orphan (asection *s,
     address = exp_intop (0);
 
   os_tail = (lang_output_section_statement_type **) lang_os_list.tail;
-  os = lang_enter_output_section_statement (secname, address, normal_section,
-					    NULL, NULL, NULL, constraint, 0);
+  os = lang_enter_output_section_statement (
+      secname, address, normal_section, 0, NULL, NULL, NULL, constraint, 0);
 
   if (add_child == NULL)
     add_child = &os->children;
@@ -2635,10 +2635,12 @@ lang_add_section (lang_statement_list_type *ptr,
     case normal_section:
     case overlay_section:
     case first_overlay_section:
+    case type_section:
       break;
     case noalloc_section:
       flags &= ~SEC_ALLOC;
       break;
+    case typed_readonly_section:
     case readonly_section:
       flags |= SEC_READONLY;
       break;
@@ -4209,6 +4211,7 @@ map_input_to_output_sections
     {
       lang_output_section_statement_type *tos;
       flagword flags;
+      unsigned int type = 0;
 
       switch (s->header.type)
 	{
@@ -4264,6 +4267,42 @@ map_input_to_output_sections
 	    case readonly_section:
 	      flags |= SEC_READONLY;
 	      break;
+	    case typed_readonly_section:
+	      flags |= SEC_READONLY;
+	      /* Fall through.  */
+	    case type_section:
+	      if (os->sectype_value->type.node_class == etree_name
+		  && os->sectype_value->type.node_code == NAME)
+		{
+		  const char *name = os->sectype_value->name.name;
+		  if (strcmp (name, "SHT_PROGBITS") == 0)
+		    type = SHT_PROGBITS;
+		  else if (strcmp (name, "SHT_STRTAB") == 0)
+		    type = SHT_STRTAB;
+		  else if (strcmp (name, "SHT_NOTE") == 0)
+		    type = SHT_NOTE;
+		  else if (strcmp (name, "SHT_NOBITS") == 0)
+		    type = SHT_NOBITS;
+		  else if (strcmp (name, "SHT_INIT_ARRAY") == 0)
+		    type = SHT_INIT_ARRAY;
+		  else if (strcmp (name, "SHT_FINI_ARRAY") == 0)
+		    type = SHT_FINI_ARRAY;
+		  else if (strcmp (name, "SHT_PREINIT_ARRAY") == 0)
+		    type = SHT_PREINIT_ARRAY;
+		  else
+		    einfo (_ ("%F%P: invalid type for output section `%s'\n"),
+			   os->name);
+		}
+	     else
+	       {
+		 exp_fold_tree_no_dot (os->sectype_value);
+		 if (expld.result.valid_p)
+		   type = expld.result.value;
+		 else
+		   einfo (_ ("%F%P: invalid type for output section `%s'\n"),
+			  os->name);
+	       }
+	      break;
 	    case noload_section:
 	      if (bfd_get_flavour (link_info.output_bfd)
 		  == bfd_target_elf_flavour)
@@ -4276,6 +4315,7 @@ map_input_to_output_sections
 	    init_os (os, flags | SEC_READONLY);
 	  else
 	    os->bfd_section->flags |= flags;
+	  os->bfd_section->type = type;
 	  break;
 	case lang_input_section_enum:
 	  break;
@@ -5665,9 +5705,10 @@ os_region_check (lang_output_section_statement_type *os,
 }
 
 static void
-ldlang_check_relro_region (lang_statement_union_type *s,
-			   seg_align_type *seg)
+ldlang_check_relro_region (lang_statement_union_type *s)
 {
+  seg_align_type *seg = &expld.dataseg;
+
   if (seg->relro == exp_seg_relro_start)
     {
       if (!seg->relro_start_stat)
@@ -6166,7 +6207,7 @@ lang_size_sections_1
 			   output_section_statement->bfd_section,
 			   &newdot);
 
-	    ldlang_check_relro_region (s, &expld.dataseg);
+	    ldlang_check_relro_region (s);
 
 	    expld.dataseg.relro = exp_seg_relro_none;
 
@@ -6346,18 +6387,19 @@ one_lang_size_sections_pass (bool *relax, bool check_regions)
 }
 
 static bool
-lang_size_segment (seg_align_type *seg)
+lang_size_segment (void)
 {
   /* If XXX_SEGMENT_ALIGN XXX_SEGMENT_END pair was seen, check whether
      a page could be saved in the data segment.  */
+  seg_align_type *seg = &expld.dataseg;
   bfd_vma first, last;
 
-  first = -seg->base & (seg->pagesize - 1);
-  last = seg->end & (seg->pagesize - 1);
+  first = -seg->base & (seg->commonpagesize - 1);
+  last = seg->end & (seg->commonpagesize - 1);
   if (first && last
-      && ((seg->base & ~(seg->pagesize - 1))
-	  != (seg->end & ~(seg->pagesize - 1)))
-      && first + last <= seg->pagesize)
+      && ((seg->base & ~(seg->commonpagesize - 1))
+	  != (seg->end & ~(seg->commonpagesize - 1)))
+      && first + last <= seg->commonpagesize)
     {
       seg->phase = exp_seg_adjust;
       return true;
@@ -6368,103 +6410,43 @@ lang_size_segment (seg_align_type *seg)
 }
 
 static bfd_vma
-lang_size_relro_segment_1 (seg_align_type *seg)
+lang_size_relro_segment_1 (void)
 {
-  bfd_vma relro_end, desired_relro_base;
-  asection *sec, *relro_sec = NULL;
-  unsigned int max_alignment_power = 0;
-  bool seen_reloc_section = false;
-  bool desired_relro_base_reduced = false;
+  seg_align_type *seg = &expld.dataseg;
+  bfd_vma relro_end, desired_end;
+  asection *sec;
 
   /* Compute the expected PT_GNU_RELRO/PT_LOAD segment end.  */
-  relro_end = ((seg->relro_end + seg->pagesize - 1)
-	       & ~(seg->pagesize - 1));
+  relro_end = (seg->relro_end + seg->relropagesize - 1) & -seg->relropagesize;
 
   /* Adjust by the offset arg of XXX_SEGMENT_RELRO_END.  */
-  desired_relro_base = relro_end - seg->relro_offset;
+  desired_end = relro_end - seg->relro_offset;
 
-  /* For sections in the relro segment.  */
+  /* For sections in the relro segment..  */
   for (sec = link_info.output_bfd->section_last; sec; sec = sec->prev)
-    if ((sec->flags & SEC_ALLOC) != 0)
+    if ((sec->flags & SEC_ALLOC) != 0
+	&& sec->vma >= seg->base
+	&& sec->vma < seg->relro_end - seg->relro_offset)
       {
-	/* Record the maximum alignment for all sections starting from
-	   the relro segment.  */
-	if (sec->alignment_power > max_alignment_power)
-	  max_alignment_power = sec->alignment_power;
+	/* Where do we want to put this section so that it ends as
+	   desired?  */
+	bfd_vma start, end, bump;
 
-	if (sec->vma >= seg->base
-	    && sec->vma < seg->relro_end - seg->relro_offset)
-	  {
-	    /* Where do we want to put the relro section so that the
-	       relro segment ends on the page bounary?  */
-	    bfd_vma start, end, bump;
-
-	    end = start = sec->vma;
-	    if (!IS_TBSS (sec))
-	      end += TO_ADDR (sec->size);
-	    bump = desired_relro_base - end;
-	    /* We'd like to increase START by BUMP, but we must heed
-	       alignment so the increase might be less than optimum.  */
-	    start += bump;
-	    start &= ~(((bfd_vma) 1 << sec->alignment_power) - 1);
-	    /* This is now the desired end for the previous section.  */
-	    desired_relro_base = start;
-	    relro_sec = sec;
-	    seen_reloc_section = true;
-	  }
-	else if (seen_reloc_section)
-	  {
-	    /* Stop searching if we see a non-relro section after seeing
-	       relro sections.  */
-	    break;
-	  }
+	end = start = sec->vma;
+	if (!IS_TBSS (sec))
+	  end += TO_ADDR (sec->size);
+	bump = desired_end - end;
+	/* We'd like to increase START by BUMP, but we must heed
+	   alignment so the increase might be less than optimum.  */
+	start += bump;
+	start &= ~(((bfd_vma) 1 << sec->alignment_power) - 1);
+	/* This is now the desired end for the previous section.  */
+	desired_end = start;
       }
 
-  if (relro_sec != NULL
-      && seg->maxpagesize >= (1U << max_alignment_power))
-    {
-      asection *prev_sec;
-      bfd_vma prev_sec_end_plus_1_page;
-
-       /* Find the first preceding load section.  */
-      for (prev_sec = relro_sec->prev;
-	   prev_sec != NULL;
-	   prev_sec = prev_sec->prev)
-	if ((prev_sec->flags & SEC_ALLOC) != 0)
-	  break;
-
-      prev_sec_end_plus_1_page = (prev_sec->vma + prev_sec->size
-				  + seg->maxpagesize);
-      if (prev_sec_end_plus_1_page < desired_relro_base)
-	{
-	  bfd_vma aligned_relro_base;
-
-	  desired_relro_base_reduced = true;
-
-	  /* Don't add the 1-page gap before the relro segment.  Align
-	     the relro segment first.  */
-	  aligned_relro_base = (desired_relro_base
-				 & ~(seg->maxpagesize - 1));
-	  if (prev_sec_end_plus_1_page < aligned_relro_base)
-	    {
-	      /* Subtract the maximum page size if therer is still a
-		 1-page gap.  */
-	      desired_relro_base -= seg->maxpagesize;
-	      relro_end -= seg->maxpagesize;
-	    }
-	  else
-	    {
-	      /* Align the relro segment.  */
-	      desired_relro_base = aligned_relro_base;
-	      relro_end &= ~(seg->maxpagesize - 1);
-	    }
-	}
-    }
-
   seg->phase = exp_seg_relro_adjust;
-  ASSERT (desired_relro_base_reduced
-	  || desired_relro_base >= seg->base);
-  seg->base = desired_relro_base;
+  ASSERT (desired_end >= seg->base);
+  seg->base = desired_end;
   return relro_end;
 }
 
@@ -6476,7 +6458,7 @@ lang_size_relro_segment (bool *relax, bool check_regions)
   if (link_info.relro && expld.dataseg.relro_end)
     {
       bfd_vma data_initial_base = expld.dataseg.base;
-      bfd_vma data_relro_end = lang_size_relro_segment_1 (&expld.dataseg);
+      bfd_vma data_relro_end = lang_size_relro_segment_1 ();
 
       lang_reset_memory_regions ();
       one_lang_size_sections_pass (relax, check_regions);
@@ -6485,11 +6467,11 @@ lang_size_relro_segment (bool *relax, bool check_regions)
 	 script have increased padding over the original.  Revert.  */
       if (expld.dataseg.relro_end > data_relro_end)
 	{
-	  expld.dataseg.base = data_initial_base;;
+	  expld.dataseg.base = data_initial_base;
 	  do_reset = true;
 	}
     }
-  else if (lang_size_segment (&expld.dataseg))
+  else if (lang_size_segment ())
     do_reset = true;
 
   return do_reset;
@@ -7022,6 +7004,7 @@ lang_symbol_tweaks (void)
 	    h->other = (h->other & ~ELF_ST_VISIBILITY (-1)) | STV_HIDDEN;
 	  h->def_regular = 1;
 	  h->root.linker_def = 1;
+	  h->root.rel_from_abs = 1;
 	}
     }
 }
@@ -7563,6 +7546,7 @@ lang_output_section_statement_type *
 lang_enter_output_section_statement (const char *output_section_statement_name,
 				     etree_type *address_exp,
 				     enum section_type sectype,
+				     etree_type *sectype_value,
 				     etree_type *align,
 				     etree_type *subalign,
 				     etree_type *ebase,
@@ -7580,10 +7564,12 @@ lang_enter_output_section_statement (const char *output_section_statement_name,
       os->addr_tree = address_exp;
     }
   os->sectype = sectype;
-  if (sectype != noload_section)
-    os->flags = SEC_NO_FLAGS;
-  else
+  if (sectype == type_section || sectype == typed_readonly_section)
+    os->sectype_value = sectype_value;
+  else if (sectype == noload_section)
     os->flags = SEC_NEVER_LOAD;
+  else
+    os->flags = SEC_NO_FLAGS;
   os->block_value = 1;
 
   /* Make next things chain into subchain of this.  */
@@ -7739,7 +7725,6 @@ find_relro_section_callback (lang_wild_statement_type *ptr ATTRIBUTE_UNUSED,
 
 static void
 lang_find_relro_sections_1 (lang_statement_union_type *s,
-			    seg_align_type *seg,
 			    bool *has_relro_section)
 {
   if (*has_relro_section)
@@ -7747,7 +7732,7 @@ lang_find_relro_sections_1 (lang_statement_union_type *s,
 
   for (; s != NULL; s = s->header.next)
     {
-      if (s == seg->relro_end_stat)
+      if (s == expld.dataseg.relro_end_stat)
 	break;
 
       switch (s->header.type)
@@ -7759,15 +7744,15 @@ lang_find_relro_sections_1 (lang_statement_union_type *s,
 	  break;
 	case lang_constructors_statement_enum:
 	  lang_find_relro_sections_1 (constructor_list.head,
-				      seg, has_relro_section);
+				      has_relro_section);
 	  break;
 	case lang_output_section_statement_enum:
 	  lang_find_relro_sections_1 (s->output_section_statement.children.head,
-				      seg, has_relro_section);
+				      has_relro_section);
 	  break;
 	case lang_group_statement_enum:
 	  lang_find_relro_sections_1 (s->group_statement.children.head,
-				      seg, has_relro_section);
+				      has_relro_section);
 	  break;
 	default:
 	  break;
@@ -7783,7 +7768,7 @@ lang_find_relro_sections (void)
   /* Check all sections in the link script.  */
 
   lang_find_relro_sections_1 (expld.dataseg.relro_start_stat,
-			      &expld.dataseg, &has_relro_section);
+			      &has_relro_section);
 
   if (!has_relro_section)
     link_info.relro = false;
@@ -8900,7 +8885,7 @@ lang_enter_overlay_section (const char *name)
   etree_type *size;
 
   lang_enter_output_section_statement (name, overlay_vma, overlay_section,
-				       0, overlay_subalign, 0, 0, 0);
+				       0, 0, overlay_subalign, 0, 0, 0);
 
   /* If this is the first section, then base the VMA of future
      sections on this one.  This will work correctly even if `.' is

@@ -1294,9 +1294,8 @@ _bfd_elf_merge_symbol (bfd *abfd,
 	  h->root.non_ir_ref_dynamic = true;
 	  hi->root.non_ir_ref_dynamic = true;
 	}
-
-      if ((oldbfd->flags & BFD_PLUGIN) != 0
-	  && hi->root.type == bfd_link_hash_indirect)
+      else if ((oldbfd->flags & BFD_PLUGIN) != 0
+	       && hi->root.type == bfd_link_hash_indirect)
 	{
 	  /* Change indirect symbol from IR to undefined.  */
 	  hi->root.type = bfd_link_hash_undefined;
@@ -14888,7 +14887,7 @@ bfd_elf_discard_info (bfd *output_bfd, struct bfd_link_info *info)
 
   if (info->eh_frame_hdr_type
       && !bfd_link_relocatable (info)
-      && _bfd_elf_discard_section_eh_frame_hdr (output_bfd, info))
+      && _bfd_elf_discard_section_eh_frame_hdr (info))
     changed = 1;
 
   return changed;

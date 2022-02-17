@@ -1104,7 +1104,8 @@ _bfd_elf_make_section_from_shdr (bfd *abfd,
 
   if (!bfd_set_section_vma (newsect, hdr->sh_addr / opb)
       || !bfd_set_section_size (newsect, hdr->sh_size)
-      || !bfd_set_section_alignment (newsect, bfd_log2 (hdr->sh_addralign)))
+      || !bfd_set_section_alignment (newsect, bfd_log2 (hdr->sh_addralign
+							& -hdr->sh_addralign)))
     return false;
 
   /* As a GNU extension, if the name begins with .gnu.linkonce, we
@@ -3279,7 +3280,9 @@ elf_fake_sections (bfd *abfd, asection *asect, void *fsarg)
 
   /* If the section type is unspecified, we set it based on
      asect->flags.  */
-  if ((asect->flags & SEC_GROUP) != 0)
+  if (asect->type != 0)
+    sh_type = asect->type;
+  else if ((asect->flags & SEC_GROUP) != 0)
     sh_type = SHT_GROUP;
   else
     sh_type = bfd_elf_get_default_section_type (asect->flags);
@@ -4227,7 +4230,7 @@ _bfd_elf_assign_file_position_for_section (Elf_Internal_Shdr *i_shdrp,
 					   bool align)
 {
   if (align && i_shdrp->sh_addralign > 1)
-    offset = BFD_ALIGN (offset, i_shdrp->sh_addralign);
+    offset = BFD_ALIGN (offset, i_shdrp->sh_addralign & -i_shdrp->sh_addralign);
   i_shdrp->sh_offset = offset;
   if (i_shdrp->bfd_section != NULL)
     i_shdrp->bfd_section->filepos = offset;
@@ -4343,6 +4346,20 @@ _bfd_elf_compute_section_file_positions (bfd *abfd,
   return true;
 }
 
+/* Retrieve .eh_frame_hdr.  Prior to size_dynamic_sections the
+   function effectively returns whether --eh-frame-hdr is given on the
+   command line.  After size_dynamic_sections the result reflects
+   whether .eh_frame_hdr will actually be output (sizing isn't done
+   until ldemul_after_allocation).  */
+
+static asection *
+elf_eh_frame_hdr (const struct bfd_link_info *info)
+{
+  if (info != NULL && is_elf_hash_table (info->hash))
+    return elf_hash_table (info)->eh_info.hdr_sec;
+  return NULL;
+}
+
 /* Make an initial estimate of the size of the program header.  If we
    get the number wrong here, we'll redo section placement.  */
 
@@ -4379,7 +4396,7 @@ get_program_header_size (bfd *abfd, struct bfd_link_info *info)
       ++segs;
     }
 
-  if (elf_eh_frame_hdr (abfd))
+  if (elf_eh_frame_hdr (info))
     {
       /* We need a PT_GNU_EH_FRAME segment.  */
       ++segs;
@@ -5134,7 +5151,7 @@ _bfd_elf_map_sections_to_segments (bfd *abfd,
 
       /* If there is a .eh_frame_hdr section, throw in a PT_GNU_EH_FRAME
 	 segment.  */
-      eh_frame_hdr = elf_eh_frame_hdr (abfd);
+      eh_frame_hdr = elf_eh_frame_hdr (info);
       if (eh_frame_hdr != NULL
 	  && (eh_frame_hdr->output_section->flags & SEC_LOAD) != 0)
 	{
@@ -6135,6 +6152,7 @@ assign_file_positions_for_non_load_sections (bfd *abfd,
   for (hdrpp = i_shdrpp + 1; hdrpp < end_hdrpp; hdrpp++)
     {
       Elf_Internal_Shdr *hdr;
+      bfd_vma align;
 
       hdr = *hdrpp;
       if (hdr->bfd_section != NULL
@@ -6160,11 +6178,10 @@ assign_file_positions_for_non_load_sections (bfd *abfd,
 		: hdr->bfd_section->name));
 	  /* We don't need to page align empty sections.  */
 	  if ((abfd->flags & D_PAGED) != 0 && hdr->sh_size != 0)
-	    off += vma_page_aligned_bias (hdr->sh_addr, off,
-					  maxpagesize);
+	    align = maxpagesize;
 	  else
-	    off += vma_page_aligned_bias (hdr->sh_addr, off,
-					  hdr->sh_addralign);
+	    align = hdr->sh_addralign & -hdr->sh_addralign;
+	  off += vma_page_aligned_bias (hdr->sh_addr, off, align);
 	  off = _bfd_elf_assign_file_position_for_section (hdr, off,
 							   false);
 	}
